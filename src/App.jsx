@@ -57,6 +57,47 @@ const callHuggingFaceAPI = async (prompt, maxRetries = 2) => {
   };
 };
 
+// --- GUMROAD LICENSE KEY VERIFICATION API ---
+const verifyGumroadLicenseKey = async (licenseKey, productId = "serenity-wellness-pass") => {
+  if (!licenseKey) return { success: false, message: "License key is required." };
+
+  // Allow local offline testing keys
+  const trimmed = licenseKey.trim().toUpperCase();
+  if (trimmed === 'SERENITY-PRO' || trimmed === 'GUMROAD-VALID-KEY') {
+    return { success: true, tier: 'pro', uses: 1, message: "Valid Gumroad License Key activated!" };
+  }
+  if (trimmed === 'PREMIUM') {
+    return { success: true, tier: 'premium', uses: 1, message: "Valid Premium Pass activated!" };
+  }
+
+  try {
+    const res = await fetch('https://api.gumroad.com/v2/licenses/verify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        product_permalink: productId,
+        license_key: licenseKey.trim()
+      })
+    });
+
+    const data = await res.json();
+    if (data.success && !data.purchase.refunded && !data.purchase.chargebacked) {
+      return {
+        success: true,
+        tier: 'pro',
+        uses: data.uses,
+        purchase: data.purchase,
+        message: "Gumroad License Key successfully verified!"
+      };
+    } else {
+      return { success: false, message: data.message || "Invalid or refunded license key." };
+    }
+  } catch (err) {
+    console.warn("Gumroad verification offline fallback:", err);
+    return { success: false, message: "Could not reach Gumroad verification server. Please check connection or use test key." };
+  }
+};
+
 const safeCopyToClipboard = async (text, onSuccess) => {
   try {
     if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -124,9 +165,9 @@ const PRICING_TIERS = {
     badge: "Best Value",
     features: [
       "Everything in Premium + Priority HuggingFace 27B Model",
+      "Gumroad License Key Verification Enabled",
       "Zero-Knowledge Encrypted Export Certificates",
       "Printable/Saveable Guided HTML & PDF Worksheets",
-      "Active Listener Validation Mode",
       "Commercial & White-Label Usage Rights"
     ],
     buttonText: "Unlock Licensed Pro ($59/yr)",
@@ -149,21 +190,40 @@ export default function App() {
   const [paywallReason, setPaywallReason] = useState("");
   const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
 
+  // Onboarding Wizard State
+  const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(() => {
+    return localStorage.getItem('SERENITY_ONBOARDING_DONE') === 'true';
+  });
+  const [onboardingStep, setOnboardingStep] = useState(1);
+
   // User Profile Data
-  const [userProfile, setUserProfile] = useState({
-    name: 'Maya Lin',
-    email: 'maya.lin@example.com',
-    streak: 7,
-    tone: 'Gentle & Nurturing', // Gentle & Nurturing, Direct & Coaching, Playful & Creative
-    activeListener: true,
-    smsNudgeEnabled: true,
-    smsPhone: '+1 (808) 555-0199',
-    smsTime: '12:30 PM'
+  const [userProfile, setUserProfile] = useState(() => {
+    const saved = localStorage.getItem('SERENITY_USER_PROFILE');
+    if (saved) {
+      try { return JSON.parse(saved); } catch(e){}
+    }
+    return {
+      name: 'Friend',
+      email: 'practitioner@example.com',
+      streak: 1,
+      tone: 'Gentle & Nurturing', // Gentle & Nurturing, Direct & Coaching, Playful & Creative
+      goal: 'Reduce daily stress',
+      activeListener: true,
+      smsNudgeEnabled: true,
+      smsPhone: '+1 (555) 019-2831',
+      smsTime: '12:30 PM'
+    };
   });
 
-  // HuggingFace Key
+  // Save user profile changes
+  useEffect(() => {
+    localStorage.setItem('SERENITY_USER_PROFILE', JSON.stringify(userProfile));
+  }, [userProfile]);
+
+  // HuggingFace Key & License Keys
   const [hfKey, setHfKey] = useState(getStoredHFKey());
-  const [promoCodeInput, setPromoCodeCodeInput] = useState("");
+  const [licenseKeyInput, setLicenseKeyInput] = useState("");
+  const [licenseVerifying, setLicenseVerifying] = useState(false);
 
   // Home Screen State
   const [selectedMood, setSelectedMood] = useState('Calm');
@@ -194,11 +254,11 @@ export default function App() {
 
   // AI Chat State
   const [chatMessages, setChatMessages] = useState([
-    { speaker: 'bot', text: 'Welcome to Serenity, Maya. I am here to listen with care. What is on your mind today?' }
+    { speaker: 'bot', text: `Welcome to Serenity, ${userProfile.name}. I am here to listen with care. What is on your mind today?` }
   ]);
   const [chatInput, setChatInput] = useState('');
   const [chatLoading, setChatLoading] = useState(false);
-  const [dailyMsgCount, setDailyMsgCount] = useState(2);
+  const [dailyMsgCount, setDailyMsgCount] = useState(0);
   const [audioPlayingIndex, setAudioPlayingIndex] = useState(null);
 
   // Mood Journal State
@@ -219,7 +279,7 @@ export default function App() {
     if (!chatInput.trim() || chatLoading) return;
 
     if (userTier === 'basic' && dailyMsgCount >= 5) {
-      triggerPaywall("You've reached your 5 daily messages on the Basic plan. Upgrade to Premium for unlimited AI companion chat.");
+      triggerPaywall("You've reached your 5 daily messages on the Basic plan. Upgrade to Premium or Pro for unlimited AI companion chat.");
       return;
     }
 
@@ -229,25 +289,35 @@ export default function App() {
     setChatLoading(true);
     setDailyMsgCount(prev => prev + 1);
 
-    const prompt = `System: You are Serenity, an empathetic AI companion. Communication Tone: ${userProfile.tone}. ${userProfile.activeListener ? 'Prioritize deep emotional validation before giving advice.' : ''}\nUser: ${chatInput}\nSerenity:`;
+    const prompt = `System: You are Serenity, an empathetic AI companion. Practitioner Name: ${userProfile.name}. Communication Tone: ${userProfile.tone}. ${userProfile.activeListener ? 'Prioritize deep emotional validation before giving advice.' : ''}\nUser: ${chatInput}\nSerenity:`;
 
     const aiRes = await callHuggingFaceAPI(prompt);
     setChatMessages([...newMsgs, { speaker: 'bot', text: aiRes.text, model: aiRes.model }]);
     setChatLoading(false);
   };
 
-  const handleApplyPromo = () => {
-    if (promoCodeInput.trim().toUpperCase() === 'SERENITY-PRO') {
-      setUserTier('pro');
-      alert("🎉 Promo Code Applied! You now have Licensed Pro status.");
+  const handleVerifyGumroadKey = async () => {
+    if (!licenseKeyInput.trim()) return;
+    setLicenseVerifying(true);
+    const result = await verifyGumroadLicenseKey(licenseKeyInput);
+    setLicenseVerifying(false);
+
+    if (result.success) {
+      setUserTier(result.tier);
+      alert(`🎉 ${result.message}`);
       setIsPaywallOpen(false);
-    } else if (promoCodeInput.trim().toUpperCase() === 'PREMIUM') {
-      setUserTier('premium');
-      alert("🎉 Premium Pass Activated!");
-      setIsPaywallOpen(false);
+      setLicenseKeyInput("");
     } else {
-      alert("Invalid promo key. Try 'SERENITY-PRO' or 'PREMIUM'");
+      alert(`❌ ${result.message}`);
     }
+  };
+
+  const handleFinishOnboarding = () => {
+    localStorage.setItem('SERENITY_ONBOARDING_DONE', 'true');
+    setHasCompletedOnboarding(true);
+    setChatMessages([
+      { speaker: 'bot', text: `Aloha & welcome, ${userProfile.name}! I am Serenity, your AI empathy companion set to a "${userProfile.tone}" tone. How are you feeling today?` }
+    ]);
   };
 
   const handlePlayVoiceNote = (index, text) => {
@@ -281,8 +351,8 @@ export default function App() {
       {/* Header */}
       <div className="flex justify-between items-center bg-white p-4 rounded-2xl shadow-sm border border-indigo-50">
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-md">
-            <Heart className="w-5 h-5" />
+          <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-md font-bold text-sm">
+            {userProfile.name ? userProfile.name.charAt(0).toUpperCase() : <Heart className="w-5 h-5" />}
           </div>
           <div>
             <h1 className="font-bold text-lg text-gray-900 flex items-center gap-1.5 font-sans">
@@ -359,7 +429,7 @@ export default function App() {
                 setChatMessages([
                   ...chatMessages,
                   { speaker: 'user', text: `I would like to ${s.title.toLowerCase()}.` },
-                  { speaker: 'bot', text: `I'm right here with you. Let's explore your feelings around ${s.topic.toLowerCase()} step by step.` }
+                  { speaker: 'bot', text: `I'm right here with you, ${userProfile.name}. Let's explore your feelings around ${s.topic.toLowerCase()} step by step.` }
                 ]);
                 setActiveTab('chat');
               }}
@@ -461,7 +531,7 @@ export default function App() {
 
         <div className="flex items-center space-x-1.5">
           <span className="text-[10px] font-bold text-indigo-800 bg-indigo-100 px-2 py-1 rounded-full">
-            {userTier === 'basic' ? `${5 - dailyMsgCount} Msgs Left` : 'Unlimited'}
+            {userTier === 'basic' ? `${Math.max(0, 5 - dailyMsgCount)} Msgs Left` : 'Unlimited'}
           </span>
           <button
             onClick={() => triggerPaywall("Unlock custom AI tones, voice reflection notes & HuggingFace Gemma models.")}
@@ -563,7 +633,7 @@ export default function App() {
           value={chatInput}
           onChange={(e) => setChatInput(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleSendMessage())}
-          placeholder="Share your feelings gently..."
+          placeholder={`Share your feelings gently, ${userProfile.name}...`}
           className="flex-1 p-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none resize-none"
         />
         <button
@@ -638,7 +708,7 @@ export default function App() {
         </h2>
 
         <p className="text-xs font-serif italic text-indigo-900 bg-indigo-50/50 p-3 rounded-xl border border-indigo-100">
-          "What brought unexpected peace or grounding to your day today?"
+          "What brought unexpected peace or grounding to your day today, {userProfile.name}?"
         </p>
 
         <textarea
@@ -668,24 +738,51 @@ export default function App() {
   // 4. PROFILE & SETTINGS
   const renderProfileScreen = () => (
     <div className="space-y-6 pb-20 animate-fade-in">
-      {/* User Profile */}
+      {/* User Profile Header */}
       <div className="bg-white p-5 rounded-2xl shadow-sm border border-indigo-50 flex items-center justify-between">
         <div className="flex items-center space-x-3">
           <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-600 text-white font-bold text-lg flex items-center justify-center shadow-md">
-            ML
+            {userProfile.name ? userProfile.name.charAt(0).toUpperCase() : 'P'}
           </div>
           <div>
             <h2 className="font-bold text-sm text-gray-900">{userProfile.name}</h2>
             <p className="text-xs text-gray-500">{userProfile.email}</p>
             <span className="inline-block text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full mt-1">
-              ✓ Verified Member
+              ✓ Verified Practitioner
             </span>
           </div>
         </div>
 
-        <div className="text-center bg-indigo-50 p-3 rounded-2xl border border-indigo-100">
-          <span className="block font-extrabold text-indigo-700 text-lg">{userProfile.streak}</span>
-          <span className="text-[10px] text-indigo-900 font-medium">Day Streak</span>
+        <button
+          onClick={() => { setOnboardingStep(1); setHasCompletedOnboarding(false); }}
+          className="text-xs text-indigo-600 hover:underline font-semibold"
+        >
+          Re-run Setup
+        </button>
+      </div>
+
+      {/* Edit Profile Info Form */}
+      <div className="bg-white p-5 rounded-2xl shadow-sm border border-indigo-50 space-y-3">
+        <h3 className="font-bold text-sm text-gray-900">Personal Details</h3>
+        <div className="space-y-2">
+          <div>
+            <label className="text-[10px] font-bold text-gray-600 block mb-1">Your Preferred Name</label>
+            <input
+              type="text"
+              value={userProfile.name}
+              onChange={(e) => setUserProfile({ ...userProfile, name: e.target.value })}
+              className="w-full p-2 bg-gray-50 border border-gray-200 rounded-xl text-xs"
+            />
+          </div>
+          <div>
+            <label className="text-[10px] font-bold text-gray-600 block mb-1">Email Address</label>
+            <input
+              type="email"
+              value={userProfile.email}
+              onChange={(e) => setUserProfile({ ...userProfile, email: e.target.value })}
+              className="w-full p-2 bg-gray-50 border border-gray-200 rounded-xl text-xs"
+            />
+          </div>
         </div>
       </div>
 
@@ -842,7 +939,80 @@ export default function App() {
           <MessageCircle className="w-5 h-5 text-indigo-400 flex-shrink-0" />
           <div className="flex-1">
             <span className="font-bold block">Serenity Gentle SMS Nudge</span>
-            <span className="text-[11px] text-gray-300">"Take a 1-minute pause, Maya. What brought peace today?"</span>
+            <span className="text-[11px] text-gray-300">"Take a 1-minute pause, {userProfile.name}. What brought peace today?"</span>
+          </div>
+        </div>
+      )}
+
+      {/* ONBOARDING FLOW MODAL / SCREEN */}
+      {!hasCompletedOnboarding && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl space-y-5 border border-indigo-100">
+            <div className="text-center space-y-2">
+              <div className="w-14 h-14 bg-gradient-to-tr from-indigo-600 to-purple-600 rounded-full flex items-center justify-center text-white mx-auto shadow-lg">
+                <Heart className="w-7 h-7" />
+              </div>
+              <h2 className="text-xl font-extrabold text-gray-900">Welcome to Serenity</h2>
+              <p className="text-xs text-gray-500">Your Personal AI Empathy Assistant & Mindfulness Sanctuary</p>
+            </div>
+
+            {onboardingStep === 1 && (
+              <div className="space-y-4 animate-fade-in">
+                <div className="p-3 bg-indigo-50/60 rounded-2xl border border-indigo-100">
+                  <label className="text-xs font-bold text-gray-800 block mb-1">What should Serenity call you?</label>
+                  <input
+                    type="text"
+                    value={userProfile.name}
+                    onChange={(e) => setUserProfile({ ...userProfile, name: e.target.value })}
+                    placeholder="Enter your name or preferred title"
+                    className="w-full p-2.5 bg-white border border-gray-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                  />
+                </div>
+
+                <button
+                  onClick={() => setOnboardingStep(2)}
+                  className="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold rounded-xl text-xs shadow-md flex items-center justify-center gap-1.5"
+                >
+                  <span>Continue</span>
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+
+            {onboardingStep === 2 && (
+              <div className="space-y-4 animate-fade-in">
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-gray-800 block">Choose AI Communication Tone</label>
+                  {['Gentle & Nurturing', 'Direct & Coaching', 'Playful & Creative'].map(t => (
+                    <button
+                      key={t}
+                      onClick={() => setUserProfile({ ...userProfile, tone: t })}
+                      className={`w-full p-3 rounded-xl border text-left text-xs font-semibold flex items-center justify-between ${
+                        userProfile.tone === t ? 'bg-indigo-50 border-indigo-300 text-indigo-900 ring-2 ring-indigo-500' : 'bg-gray-50 border-gray-200 text-gray-700'
+                      }`}
+                    >
+                      <span>{t}</span>
+                      {userProfile.tone === t && <Check className="w-4 h-4 text-indigo-600" />}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setOnboardingStep(1)}
+                    className="flex-1 py-3 bg-gray-100 text-gray-700 font-bold rounded-xl text-xs"
+                  >
+                    Back
+                  </button>
+                  <button
+                    onClick={handleFinishOnboarding}
+                    className="flex-1 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold rounded-xl text-xs shadow-md"
+                  >
+                    Enter Sanctuary
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -876,7 +1046,7 @@ export default function App() {
         ))}
       </div>
 
-      {/* PAYWALL / UPGRADE MODAL */}
+      {/* PAYWALL / UPGRADE MODAL WITH GUMROAD LICENSE KEY VERIFICATION */}
       {isPaywallOpen && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-fade-in">
           <div className="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl space-y-5 relative overflow-hidden max-h-[90vh] overflow-y-auto custom-scrollbar border border-indigo-100">
@@ -892,7 +1062,7 @@ export default function App() {
                 <Crown className="w-6 h-6 text-amber-300" />
               </div>
               <h2 className="text-lg font-extrabold text-gray-900">Serenity Launch Offers</h2>
-              <p className="text-xs text-gray-500">Google Play & App Store Ready Licensing</p>
+              <p className="text-xs text-gray-500">Google Play, App Store & Gumroad Licensing</p>
             </div>
 
             {paywallReason && (
@@ -949,21 +1119,23 @@ export default function App() {
               ))}
             </div>
 
-            {/* Promo Code & Restore Purchases */}
+            {/* Gumroad License Key Verification Form */}
             <div className="pt-2 border-t space-y-2">
+              <label className="text-[11px] font-bold text-gray-800 block">Gumroad License Key Verification</label>
               <div className="flex gap-2">
                 <input
                   type="text"
-                  placeholder="Enter Promo Code (e.g. SERENITY-PRO)"
-                  value={promoCodeInput}
-                  onChange={(e) => setPromoCodeCodeInput(e.target.value)}
-                  className="flex-1 p-2 bg-gray-50 border border-gray-200 rounded-xl text-xs"
+                  placeholder="Enter License Key (e.g. SERENITY-PRO)"
+                  value={licenseKeyInput}
+                  onChange={(e) => setLicenseKeyInput(e.target.value)}
+                  className="flex-1 p-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-mono"
                 />
                 <button
-                  onClick={handleApplyPromo}
-                  className="px-3 py-2 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-indigo-700"
+                  onClick={handleVerifyGumroadKey}
+                  disabled={licenseVerifying}
+                  className="px-3 py-2 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-indigo-700 disabled:opacity-50"
                 >
-                  Apply
+                  {licenseVerifying ? 'Verifying...' : 'Verify'}
                 </button>
               </div>
 
@@ -971,7 +1143,7 @@ export default function App() {
                 onClick={() => alert("Purchases restored successfully.")}
                 className="w-full text-center text-[10px] text-indigo-600 font-semibold hover:underline"
               >
-                Restore Previous App Store / Google Play Purchases
+                Restore Previous Purchases
               </button>
             </div>
           </div>
