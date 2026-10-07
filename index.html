@@ -3,7 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>HĀNA RUNNER | Dynamic Shopify Engine for Road to Hana</title>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://unpkg.com https://cdn.jsdelivr.net https://fonts.googleapis.com https://fonts.gstatic.com https://images.unsplash.com https://huggingface.co https://*.huggingface.co; connect-src 'self' https://huggingface.co https://*.huggingface.co https://cdn.jsdelivr.net https://unpkg.com; img-src 'self' data: https://images.unsplash.com;" />
+  <title>HĀNA RUNNER | Dynamic Edge Shopify Engine for Road to Hana</title>
+
+  <!-- Preload Critical Scripts -->
+  <link rel="preload" href="https://cdn.tailwindcss.com" as="script" />
+  <link rel="preload" href="https://unpkg.com/lucide@latest" as="script" />
 
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -42,7 +47,7 @@
   </script>
 
   <style>
-    /* Custom scrollbars & smooth transitions */
+    /* Custom scrollbars, smooth transitions & touch target minimums */
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: #0f172a; }
     ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
@@ -55,24 +60,37 @@
     .active-stage-glow {
       box-shadow: 0 0 20px -5px rgba(42, 139, 104, 0.5);
     }
+    /* Ensure minimum 44px touch targets on mobile controls */
+    button, select, input[type="range"] {
+      min-height: 44px;
+    }
+    .touch-target {
+      min-width: 44px;
+      min-height: 44px;
+    }
   </style>
 </head>
 <body class="h-full flex flex-col font-sans antialiased overflow-x-hidden selection:bg-hana-leaf selection:text-white">
 
+  <!-- Accessibility Skip Link -->
+  <a href="#mainContent" class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:px-4 focus:py-2 focus:bg-emerald-600 focus:text-white focus:rounded-lg">
+    Skip to main content
+  </a>
+
   <!-- Top Navigation Header -->
-  <header class="sticky top-0 z-40 border-b border-slate-800 bg-slate-950/90 backdrop-filter backdrop-blur-md">
+  <header class="sticky top-0 z-40 border-b border-slate-800 bg-slate-950/90 backdrop-filter backdrop-blur-md" role="banner">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex items-center justify-between h-16">
 
         <!-- Brand / Title -->
         <div class="flex items-center space-x-3">
-          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-hana-leaf to-hana-green flex items-center justify-center text-emerald-200 font-bold text-xl shadow-lg border border-emerald-500/20">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-hana-leaf to-hana-green flex items-center justify-center text-emerald-200 font-bold text-xl shadow-lg border border-emerald-500/20" aria-hidden="true">
             🌺
           </div>
           <div>
             <div class="flex items-center space-x-2">
               <span class="font-serif font-bold text-lg tracking-wide text-white">HĀNA RUNNER</span>
-              <span class="bg-emerald-950 text-emerald-400 border border-emerald-800/60 text-[10px] font-semibold px-2 py-0.5 rounded-full uppercase tracking-wider">Engine v2.4 Edge</span>
+              <span class="bg-emerald-950 text-emerald-400 border border-emerald-800/60 text-[10px] font-semibold px-2 py-0.5 rounded-full uppercase tracking-wider">Engine v2.4 Pro</span>
             </div>
             <p class="text-xs text-slate-400 hidden sm:block">Dynamic Contextual Shopify Commerce Platform</p>
           </div>
@@ -82,16 +100,16 @@
         <div class="flex items-center space-x-3">
 
           <!-- Back-Engine Rules Inspector Toggle Button -->
-          <button id="toggleEngineBtn" onclick="toggleEngineModal()" class="flex items-center space-x-2 px-3 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700 transition text-xs font-medium">
-            <i data-lucide="cpu" class="w-4 h-4 text-emerald-400"></i>
+          <button id="toggleEngineBtn" onclick="toggleEngineModal()" aria-label="Open Shopify Engine Rules Inspector" class="flex items-center space-x-2 px-3 py-2 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700 transition text-xs font-medium touch-target">
+            <i data-lucide="cpu" class="w-4 h-4 text-emerald-400" aria-hidden="true"></i>
             <span class="hidden sm:inline">Shopify Engine Rules</span>
             <span class="bg-slate-900 text-slate-300 px-1.5 py-0.5 rounded text-[10px] font-mono border border-slate-800">Liquid / Metafields</span>
           </button>
 
           <!-- Shopping Cart Icon with Badge -->
-          <button onclick="openCart()" class="relative p-2 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700 transition">
-            <i data-lucide="shopping-bag" class="w-5 h-5"></i>
-            <span id="cartBadge" class="absolute -top-1 -right-1 bg-hana-sunset text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center shadow-md">0</span>
+          <button onclick="openCart()" aria-label="Open travel shopping cart" class="relative p-2.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700 transition touch-target">
+            <i data-lucide="shopping-bag" class="w-5 h-5" aria-hidden="true"></i>
+            <span id="cartBadge" aria-label="0 items in cart" class="absolute -top-1 -right-1 bg-hana-sunset text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center shadow-md">0</span>
           </button>
 
         </div>
@@ -100,29 +118,29 @@
   </header>
 
   <!-- Context Selector Banner -->
-  <section class="bg-slate-950 border-b border-slate-800/80 py-3 px-4 shadow-inner">
+  <section class="bg-slate-950 border-b border-slate-800/80 py-3 px-4 shadow-inner" aria-label="Travel Stage and Persona Controls">
     <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3">
 
       <!-- Travel Stage Selector -->
-      <div class="flex items-center space-x-1 sm:space-x-2 bg-slate-900/90 p-1 rounded-xl border border-slate-800 w-full md:w-auto justify-between sm:justify-start">
-        <button id="stageBtn-prepare" onclick="setTravelStage('prepare')" class="flex items-center space-x-2 px-3 sm:px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-200 text-slate-400 hover:text-white">
-          <i data-lucide="compass" class="w-4 h-4"></i>
+      <nav aria-label="Travel Stages" class="flex items-center space-x-1 sm:space-x-2 bg-slate-900/90 p-1 rounded-xl border border-slate-800 w-full md:w-auto justify-between sm:justify-start">
+        <button id="stageBtn-prepare" onclick="setTravelStage('prepare')" aria-pressed="true" class="flex items-center space-x-2 px-3 sm:px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-200 bg-emerald-600 text-white shadow-md active-stage-glow touch-target">
+          <i data-lucide="compass" class="w-4 h-4" aria-hidden="true"></i>
           <span>1. Preparing</span>
         </button>
-        <button id="stageBtn-travel" onclick="setTravelStage('travel')" class="flex items-center space-x-2 px-3 sm:px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-200 text-slate-400 hover:text-white">
-          <i data-lucide="navigation" class="w-4 h-4"></i>
+        <button id="stageBtn-travel" onclick="setTravelStage('travel')" aria-pressed="false" class="flex items-center space-x-2 px-3 sm:px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-200 text-slate-400 hover:text-white touch-target">
+          <i data-lucide="navigation" class="w-4 h-4" aria-hidden="true"></i>
           <span>2. On the Road</span>
         </button>
-        <button id="stageBtn-remember" onclick="setTravelStage('remember')" class="flex items-center space-x-2 px-3 sm:px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-200 text-slate-400 hover:text-white">
-          <i data-lucide="heart" class="w-4 h-4"></i>
+        <button id="stageBtn-remember" onclick="setTravelStage('remember')" aria-pressed="false" class="flex items-center space-x-2 px-3 sm:px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-200 text-slate-400 hover:text-white touch-target">
+          <i data-lucide="heart" class="w-4 h-4" aria-hidden="true"></i>
           <span>3. Remembering</span>
         </button>
-      </div>
+      </nav>
 
       <!-- Visitor Interest Profile Selector -->
       <div class="flex items-center space-x-2 text-xs text-slate-400 w-full md:w-auto justify-end">
-        <span class="hidden sm:inline">Visitor Persona:</span>
-        <select id="personaSelect" onchange="updateVisitorPersona(this.value)" class="bg-slate-900 border border-slate-700 text-slate-200 rounded-lg text-xs px-2.5 py-1.5 focus:ring-1 focus:ring-emerald-500 outline-none">
+        <label for="personaSelect" class="hidden sm:inline">Visitor Persona:</label>
+        <select id="personaSelect" onchange="updateVisitorPersona(this.value)" class="bg-slate-900 border border-slate-700 text-slate-200 rounded-lg text-xs px-2.5 py-2 focus:ring-1 focus:ring-emerald-500 outline-none min-h-[44px]">
           <option value="sightseer">🌴 First-Time Sightseer (Family/Safety focus)</option>
           <option value="angler">🎣 Local & Eco Angler (Shore Fishing/Reef-Safe)</option>
           <option value="cultural">🌺 Cultural Explorer (Respect/Malama Hana)</option>
@@ -134,17 +152,17 @@
   </section>
 
   <!-- Live Context Engine Alert Bar -->
-  <div id="liveEngineAlertBar" class="bg-gradient-to-r from-emerald-950 via-slate-900 to-slate-950 border-b border-emerald-900/40 px-4 py-2 text-xs text-slate-300">
+  <div id="liveEngineAlertBar" aria-live="polite" class="bg-gradient-to-r from-emerald-950 via-slate-900 to-slate-950 border-b border-emerald-900/40 px-4 py-2 text-xs text-slate-300">
     <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
       <div class="flex items-center space-x-2 font-mono">
-        <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse" aria-hidden="true"></span>
         <span class="text-emerald-400 font-semibold">CONTEXT ENGINE ACTIVE:</span>
         <span id="activeContextText" class="text-slate-200">Stage: Preparing | Target: Kahului Departure | Local Weather: 82°F Sunshine</span>
       </div>
 
       <!-- Mile Marker Slider (Active when Traveling stage selected) -->
       <div id="mileMarkerContainer" class="hidden flex items-center space-x-3 bg-slate-900/80 px-3 py-1 rounded-lg border border-slate-800">
-        <i data-lucide="map-pin" class="w-3.5 h-3.5 text-emerald-400"></i>
+        <i data-lucide="map-pin" class="w-3.5 h-3.5 text-emerald-400" aria-hidden="true"></i>
         <label for="mileSlider" class="text-[11px] font-semibold text-slate-300">Mile Marker:</label>
         <input type="range" id="mileSlider" min="0" max="45" value="0" step="1" oninput="onMileMarkerChange(this.value)" class="w-24 sm:w-32 accent-emerald-500 cursor-pointer">
         <span id="mileMarkerLabel" class="font-mono text-emerald-400 font-bold min-w-[50px]">MM 0</span>
@@ -152,10 +170,10 @@
     </div>
   </div>
 
-  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 grid grid-cols-1 lg:grid-cols-12 gap-8">
+  <main id="mainContent" class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 grid grid-cols-1 lg:grid-cols-12 gap-8" role="main">
 
     <!-- Left Column: Dynamic Storefront Presentation (8 cols on lg) -->
-    <div class="lg:col-span-8 space-x-0 space-y-6">
+    <div class="lg:col-span-8 space-y-6">
 
       <!-- Dynamic Stage Hero Card -->
       <div id="heroCard" class="relative rounded-2xl overflow-hidden glass-panel border border-slate-800 shadow-2xl transition-all duration-500 min-h-[220px] flex flex-col justify-end p-6 md:p-8">
@@ -179,12 +197,12 @@
           </p>
 
           <div id="heroActions" class="flex flex-wrap gap-3 pt-3">
-            <button onclick="scrollToProducts()" class="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs sm:text-sm flex items-center space-x-2 shadow-lg shadow-emerald-900/30 transition">
+            <button onclick="scrollToProducts()" class="px-4 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs sm:text-sm flex items-center space-x-2 shadow-lg shadow-emerald-900/30 transition touch-target">
               <span>View Recommended Gear & Permits</span>
-              <i data-lucide="arrow-down" class="w-4 h-4"></i>
+              <i data-lucide="arrow-down" class="w-4 h-4" aria-hidden="true"></i>
             </button>
-            <button onclick="showProtocolModal()" class="px-4 py-2 rounded-lg bg-slate-800/90 hover:bg-slate-700 text-slate-200 font-medium text-xs sm:text-sm flex items-center space-x-2 border border-slate-700 transition">
-              <i data-lucide="shield-check" class="w-4 h-4 text-emerald-400"></i>
+            <button onclick="showProtocolModal()" class="px-4 py-2.5 rounded-lg bg-slate-800/90 hover:bg-slate-700 text-slate-200 font-medium text-xs sm:text-sm flex items-center space-x-2 border border-slate-700 transition touch-target">
+              <i data-lucide="shield-check" class="w-4 h-4 text-emerald-400" aria-hidden="true"></i>
               <span>Mālama Hana Etiquette Guide</span>
             </button>
           </div>
@@ -192,8 +210,8 @@
       </div>
 
       <!-- Safety & Local Protocol Alert Banner (Dynamic) -->
-      <div id="protocolAlertBox" class="p-4 rounded-xl bg-amber-950/40 border border-amber-800/50 flex items-start space-x-3 text-amber-200 text-xs sm:text-sm">
-        <i data-lucide="alert-triangle" class="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5"></i>
+      <div id="protocolAlertBox" class="p-4 rounded-xl bg-amber-950/40 border border-amber-800/50 flex items-start space-x-3 text-amber-200 text-xs sm:text-sm" aria-live="polite">
+        <i data-lucide="alert-triangle" class="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" aria-hidden="true"></i>
         <div class="space-y-1">
           <p class="font-bold text-amber-300" id="alertTitle">Local Protocol & Safety Prompt</p>
           <p id="alertBody" class="text-slate-300 text-xs">
@@ -205,29 +223,29 @@
       <div id="interactiveMapSection" class="hidden space-y-3">
         <div class="flex items-center justify-between">
           <h2 class="text-base font-bold text-white flex items-center space-x-2">
-            <i data-lucide="map" class="w-4 h-4 text-emerald-400"></i>
+            <i data-lucide="map" class="w-4 h-4 text-emerald-400" aria-hidden="true"></i>
             <span>Interactive Highway & Stop Navigator</span>
           </h2>
           <span class="text-xs text-slate-400">Click a mile marker to simulate location</span>
         </div>
 
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-          <button onclick="setMileMarker(2)" class="p-2.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-left transition flex flex-col space-y-1">
+          <button onclick="setMileMarker(2)" class="p-2.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-left transition flex flex-col space-y-1 touch-target">
             <span class="font-mono text-emerald-400 font-bold">MM 2: Twin Falls</span>
             <span class="text-[11px] text-slate-400 truncate">Farm stand & snacks</span>
           </button>
 
-          <button onclick="setMileMarker(16)" class="p-2.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-left transition flex flex-col space-y-1">
+          <button onclick="setMileMarker(16)" class="p-2.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-left transition flex flex-col space-y-1 touch-target">
             <span class="font-mono text-emerald-400 font-bold">MM 16: Ke'anae Peninsula</span>
             <span class="text-[11px] text-slate-400 truncate">Fresh banana bread & shore fishing</span>
           </button>
 
-          <button onclick="setMileMarker(32)" class="p-2.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-left transition flex flex-col space-y-1">
+          <button onclick="setMileMarker(32)" class="p-2.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-left transition flex flex-col space-y-1 touch-target">
             <span class="font-mono text-emerald-400 font-bold">MM 32: Wai'anapanapa</span>
             <span class="text-[11px] text-slate-400 truncate">Black Sand Beach (Permit Required)</span>
           </button>
 
-          <button onclick="setMileMarker(42)" class="p-2.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-left transition flex flex-col space-y-1">
+          <button onclick="setMileMarker(42)" class="p-2.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-left transition flex flex-col space-y-1 touch-target">
             <span class="font-mono text-emerald-400 font-bold">MM 42: Hana Town</span>
             <span class="text-[11px] text-slate-400 truncate">Hana Bay & Local Artisans</span>
           </button>
@@ -235,26 +253,26 @@
       </div>
 
       <!-- Category Filter Pill Bar -->
-      <div id="categoryFilterBar" class="flex flex-wrap items-center gap-2 pt-2">
-        <button onclick="setCategoryFilter('all')" id="catBtn-all" class="px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-600 text-white border border-emerald-500/50 shadow-sm transition">
+      <div id="categoryFilterBar" class="flex flex-wrap items-center gap-2 pt-2" role="group" aria-label="Product Categories">
+        <button onclick="setCategoryFilter('all')" id="catBtn-all" class="px-3.5 py-2 rounded-full text-xs font-semibold bg-emerald-600 text-white border border-emerald-500/50 shadow-sm transition touch-target">
           All Products
         </button>
-        <button onclick="setCategoryFilter('permits-safety')" id="catBtn-permits-safety" class="px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
+        <button onclick="setCategoryFilter('permits-safety')" id="catBtn-permits-safety" class="px-3.5 py-2 rounded-full text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition touch-target">
           Permits & Safety
         </button>
-        <button onclick="setCategoryFilter('water-snorkel')" id="catBtn-water-snorkel" class="px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
+        <button onclick="setCategoryFilter('water-snorkel')" id="catBtn-water-snorkel" class="px-3.5 py-2 rounded-full text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition touch-target">
           Water & Snorkel
         </button>
-        <button onclick="setCategoryFilter('fishing-tackle')" id="catBtn-fishing-tackle" class="px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
+        <button onclick="setCategoryFilter('fishing-tackle')" id="catBtn-fishing-tackle" class="px-3.5 py-2 rounded-full text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition touch-target">
           Shore Fishing
         </button>
-        <button onclick="setCategoryFilter('food-produce')" id="catBtn-food-produce" class="px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
+        <button onclick="setCategoryFilter('food-produce')" id="catBtn-food-produce" class="px-3.5 py-2 rounded-full text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition touch-target">
           Local Produce & Food
         </button>
-        <button onclick="setCategoryFilter('camping-outdoor')" id="catBtn-camping-outdoor" class="px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
+        <button onclick="setCategoryFilter('camping-outdoor')" id="catBtn-camping-outdoor" class="px-3.5 py-2 rounded-full text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition touch-target">
           Camping & Outdoor
         </button>
-        <button onclick="setCategoryFilter('cultural-keepsakes')" id="catBtn-cultural-keepsakes" class="px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
+        <button onclick="setCategoryFilter('cultural-keepsakes')" id="catBtn-cultural-keepsakes" class="px-3.5 py-2 rounded-full text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition touch-target">
           Cultural Keepsakes
         </button>
       </div>
@@ -278,7 +296,7 @@
         <div class="flex items-center justify-between">
           <div class="flex items-center space-x-3">
             <div class="p-2.5 rounded-xl bg-cyan-950 text-cyan-400 border border-cyan-800/50">
-              <i data-lucide="anchor" class="w-5 h-5"></i>
+              <i data-lucide="anchor" class="w-5 h-5" aria-hidden="true"></i>
             </div>
             <div>
               <h3 class="text-base font-bold text-white">Local Shore Fishing & Eco-Tourism Guide</h3>
@@ -291,7 +309,7 @@
         <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
           <div class="bg-slate-900/80 p-3 rounded-xl border border-slate-800 space-y-1">
             <div class="font-semibold text-slate-200 flex items-center space-x-1.5">
-              <i data-lucide="waves" class="w-3.5 h-3.5 text-cyan-400"></i>
+              <i data-lucide="waves" class="w-3.5 h-3.5 text-cyan-400" aria-hidden="true"></i>
               <span>Ke'anae Point Fishing</span>
             </div>
             <p class="text-slate-400">Target species: Ulua (Giant Trevally), Omilu. Use reef-safe lead-free sinkers and respect local family fishing spots.</p>
@@ -299,7 +317,7 @@
 
           <div class="bg-slate-900/80 p-3 rounded-xl border border-slate-800 space-y-1">
             <div class="font-semibold text-slate-200 flex items-center space-x-1.5">
-              <i data-lucide="sun" class="w-3.5 h-3.5 text-amber-400"></i>
+              <i data-lucide="sun" class="w-3.5 h-3.5 text-amber-400" aria-hidden="true"></i>
               <span>Reef-Safe Sun Protection</span>
             </div>
             <p class="text-slate-400">Maui law strictly bans non-mineral sunscreens containing Oxybenzone or Octinoxate to safeguard coral reefs.</p>
@@ -307,7 +325,7 @@
 
           <div class="bg-slate-900/80 p-3 rounded-xl border border-slate-800 space-y-1">
             <div class="font-semibold text-slate-200 flex items-center space-x-1.5">
-              <i data-lucide="calendar" class="w-3.5 h-3.5 text-emerald-400"></i>
+              <i data-lucide="calendar" class="w-3.5 h-3.5 text-emerald-400" aria-hidden="true"></i>
               <span>Park Permits</span>
             </div>
             <p class="text-slate-400">Wai'anapanapa State Park requires online reservations up to 30 days in advance for non-resident entrance & parking.</p>
@@ -320,11 +338,11 @@
     <!-- Right Column: Interactive WASM AI Concierge & Engine Status (4 cols on lg) -->
     <div class="lg:col-span-4 space-y-6">
 
-      <div class="glass-panel rounded-2xl border border-slate-800 p-5 space-y-4 shadow-xl">
+      <div class="glass-panel rounded-2xl border border-slate-800 p-5 space-y-4 shadow-xl" aria-label="Aunty Hana AI Assistant">
         <div class="flex items-center justify-between border-b border-slate-800 pb-3">
           <div class="flex items-center space-x-2.5">
             <div class="w-8 h-8 rounded-lg bg-emerald-600/30 text-emerald-400 flex items-center justify-center border border-emerald-500/30">
-              <i data-lucide="bot" class="w-4 h-4"></i>
+              <i data-lucide="bot" class="w-4 h-4" aria-hidden="true"></i>
             </div>
             <div>
               <h3 class="text-sm font-bold text-white">Aunty Hana Edge AI</h3>
@@ -335,7 +353,7 @@
         </div>
 
         <!-- Model Progress Container -->
-        <div id="slmProgressContainer" class="hidden space-y-1 bg-slate-950 p-2.5 rounded-xl border border-slate-800">
+        <div id="slmProgressContainer" class="hidden space-y-1 bg-slate-950 p-2.5 rounded-xl border border-slate-800" aria-live="polite">
           <div class="flex justify-between text-[11px] font-mono text-slate-300">
             <span id="slmProgressText">Loading Hugging Face ONNX Model...</span>
             <span id="slmPercentText" class="text-emerald-400 font-bold">0%</span>
@@ -350,20 +368,20 @@
         </p>
 
         <!-- Quick Query Buttons -->
-        <div class="flex flex-wrap gap-1.5 text-[11px]">
-          <button onclick="askAIQuick('What are the top safety tips for driving to Hana?')" class="px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
+        <div class="flex flex-wrap gap-1.5 text-[11px]" role="group" aria-label="AI Quick Queries">
+          <button onclick="askAIQuick('What are the top safety tips for driving to Hana?')" class="px-2.5 py-1.5 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition touch-target">
             🚗 Safety Tips
           </button>
-          <button onclick="askAIQuick('Where can I get banana bread near MM 16?')" class="px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
+          <button onclick="askAIQuick('Where can I get banana bread near MM 16?')" class="px-2.5 py-1.5 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition touch-target">
             🍌 Banana Bread
           </button>
-          <button onclick="askAIQuick('What are local fishing rules for Keanae shoreline?')" class="px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
+          <button onclick="askAIQuick('What are local fishing rules for Keanae shoreline?')" class="px-2.5 py-1.5 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition touch-target">
             🎣 Shore Fishing
           </button>
         </div>
 
         <!-- Chat Output Container -->
-        <div id="chatOutput" class="bg-slate-950/80 rounded-xl p-3 border border-slate-800 text-xs min-h-[140px] max-h-[220px] overflow-y-auto space-y-3 font-sans">
+        <div id="chatOutput" aria-live="polite" class="bg-slate-950/80 rounded-xl p-3 border border-slate-800 text-xs min-h-[140px] max-h-[220px] overflow-y-auto space-y-3 font-sans">
           <div class="text-slate-400 italic">
             "Aloha! I'm here to help you navigate Hana safely and respectfully. Ask me anything!"
           </div>
@@ -377,9 +395,9 @@
 
         <!-- AI Input Form -->
         <form onsubmit="handleAISubmit(event)" class="flex gap-2">
-          <input type="text" id="aiInput" placeholder="Ask Aunty Hana..." class="flex-1 bg-slate-900 border border-slate-700 rounded-lg text-xs px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500">
-          <button type="submit" id="aiSubmitBtn" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-2 rounded-lg text-xs font-semibold flex items-center justify-center transition">
-            <i data-lucide="send" class="w-3.5 h-3.5"></i>
+          <input type="text" id="aiInput" aria-label="Ask Aunty Hana AI Assistant" placeholder="Ask Aunty Hana..." class="flex-1 bg-slate-900 border border-slate-700 rounded-lg text-xs px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 min-h-[44px]">
+          <button type="submit" id="aiSubmitBtn" aria-label="Send message" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-2 rounded-lg text-xs font-semibold flex items-center justify-center transition touch-target">
+            <i data-lucide="send" class="w-3.5 h-3.5" aria-hidden="true"></i>
           </button>
         </form>
       </div>
@@ -387,7 +405,7 @@
       <div class="glass-panel rounded-2xl border border-slate-800 p-5 space-y-3">
         <div class="flex items-center justify-between">
           <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center space-x-1.5">
-            <i data-lucide="activity" class="w-4 h-4 text-emerald-400"></i>
+            <i data-lucide="activity" class="w-4 h-4 text-emerald-400" aria-hidden="true"></i>
             <span>Engine Context State</span>
           </h3>
           <span class="text-[10px] font-mono text-emerald-400">DYNAMIC SYNC</span>
@@ -402,8 +420,8 @@
           <div><span class="text-slate-500">malama_pledge_accepted:</span> <span id="jsonPledge" class="text-purple-400">false</span></div>
         </div>
 
-        <button onclick="toggleEngineModal()" class="w-full text-center py-2 rounded-lg bg-slate-800/90 hover:bg-slate-700 text-xs font-semibold text-slate-300 border border-slate-700 transition flex items-center justify-center space-x-1.5">
-          <i data-lucide="code" class="w-3.5 h-3.5 text-emerald-400"></i>
+        <button onclick="toggleEngineModal()" class="w-full text-center py-2.5 rounded-lg bg-slate-800/90 hover:bg-slate-700 text-xs font-semibold text-slate-300 border border-slate-700 transition flex items-center justify-center space-x-1.5 touch-target">
+          <i data-lucide="code" class="w-3.5 h-3.5 text-emerald-400" aria-hidden="true"></i>
           <span>Inspect Shopify Liquid & Rules Engine</span>
         </button>
       </div>
@@ -411,14 +429,14 @@
       <!-- Eco Contribution & Malama Maui Box -->
       <div class="bg-gradient-to-br from-emerald-950/60 to-slate-900 border border-emerald-900/50 rounded-2xl p-5 space-y-3">
         <div class="flex items-center space-x-2">
-          <i data-lucide="sprout" class="w-5 h-5 text-emerald-400"></i>
+          <i data-lucide="sprout" class="w-5 h-5 text-emerald-400" aria-hidden="true"></i>
           <h4 class="text-xs font-bold text-white uppercase tracking-wider">Mālama Hana Pledge</h4>
         </div>
         <p class="text-xs text-slate-300">
           1% of every order directly supports East Maui watershed protection and local Hana youth cultural programs.
         </p>
         <label class="flex items-center space-x-2 cursor-pointer text-xs text-slate-200">
-          <input type="checkbox" id="pledgeCheckbox" onchange="togglePledge(this.checked)" class="rounded border-slate-700 text-emerald-600 focus:ring-emerald-500 bg-slate-900">
+          <input type="checkbox" id="pledgeCheckbox" onchange="togglePledge(this.checked)" class="rounded border-slate-700 text-emerald-600 focus:ring-emerald-500 bg-slate-900 w-4 h-4">
           <span>Add optional $2 Mālama ʻĀina donation to order</span>
         </label>
       </div>
@@ -428,7 +446,7 @@
   </main>
 
   <!-- Cart Drawer Component -->
-  <div id="cartDrawer" class="fixed inset-0 z-50 overflow-hidden hidden">
+  <div id="cartDrawer" class="fixed inset-0 z-50 overflow-hidden hidden" role="dialog" aria-modal="true" aria-label="Your Travel Cart">
     <div class="absolute inset-0 bg-slate-950/70 backdrop-blur-sm" onclick="closeCart()"></div>
 
     <div class="fixed inset-y-0 right-0 max-w-full flex pl-10">
@@ -437,16 +455,16 @@
         <!-- Cart Header -->
         <div class="p-4 border-b border-slate-800 flex items-center justify-between">
           <div class="flex items-center space-x-2">
-            <i data-lucide="shopping-bag" class="w-5 h-5 text-emerald-400"></i>
+            <i data-lucide="shopping-bag" class="w-5 h-5 text-emerald-400" aria-hidden="true"></i>
             <h2 class="text-base font-bold text-white">Your Travel Cart</h2>
           </div>
-          <button onclick="closeCart()" class="p-1 rounded-lg text-slate-400 hover:text-white">
-            <i data-lucide="x" class="w-5 h-5"></i>
+          <button onclick="closeCart()" aria-label="Close cart drawer" class="p-2 rounded-lg text-slate-400 hover:text-white touch-target">
+            <i data-lucide="x" class="w-5 h-5" aria-hidden="true"></i>
           </button>
         </div>
 
         <!-- Cart Items List -->
-        <div id="cartItemsContainer" class="flex-1 overflow-y-auto p-4 space-y-3">
+        <div id="cartItemsContainer" aria-live="polite" class="flex-1 overflow-y-auto p-4 space-y-3">
           <p class="text-xs text-slate-500 italic text-center py-8">Your cart is currently empty.</p>
         </div>
 
@@ -467,7 +485,7 @@
             <span id="cartTotal" class="font-mono text-emerald-400">$0.00</span>
           </div>
 
-          <button onclick="handleCheckout()" class="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-lg transition">
+          <button onclick="handleCheckout()" class="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-lg transition touch-target">
             Proceed to Checkout
           </button>
         </div>
@@ -477,7 +495,7 @@
   </div>
 
   <!-- Shopify Engine Rules & Metafield Inspector Modal -->
-  <div id="engineModal" class="fixed inset-0 z-50 overflow-y-auto hidden">
+  <div id="engineModal" class="fixed inset-0 z-50 overflow-y-auto hidden" role="dialog" aria-modal="true" aria-label="Shopify Rules Inspector">
     <div class="min-h-screen px-4 text-center flex items-center justify-center">
       <div class="fixed inset-0 bg-slate-950/80 backdrop-blur-md" onclick="toggleEngineModal()"></div>
 
@@ -486,15 +504,15 @@
         <div class="flex items-center justify-between border-b border-slate-800 pb-4">
           <div class="flex items-center space-x-3">
             <div class="p-2 rounded-xl bg-emerald-950 text-emerald-400 border border-emerald-800">
-              <i data-lucide="cpu" class="w-6 h-6"></i>
+              <i data-lucide="cpu" class="w-6 h-6" aria-hidden="true"></i>
             </div>
             <div>
               <h3 class="text-lg font-bold text-white">Shopify Back-Engine Rule Inspector</h3>
               <p class="text-xs text-slate-400">Live Custom Metafield Evaluation & Dynamic Liquid/GraphQL Rules</p>
             </div>
           </div>
-          <button onclick="toggleEngineModal()" class="p-1 rounded-lg text-slate-400 hover:text-white">
-            <i data-lucide="x" class="w-5 h-5"></i>
+          <button onclick="toggleEngineModal()" aria-label="Close inspector" class="p-2 rounded-lg text-slate-400 hover:text-white touch-target">
+            <i data-lucide="x" class="w-5 h-5" aria-hidden="true"></i>
           </button>
         </div>
 
@@ -503,7 +521,7 @@
           <!-- Liquid Template Rules Preview -->
           <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
             <div class="text-emerald-400 font-bold font-sans flex items-center space-x-2">
-              <i data-lucide="file-code" class="w-4 h-4"></i>
+              <i data-lucide="file-code" class="w-4 h-4" aria-hidden="true"></i>
               <span>Shopify Liquid Logic Evaluation</span>
             </div>
             <pre id="liquidRulesCode" class="text-[11px] text-slate-300 overflow-x-auto whitespace-pre-wrap leading-relaxed bg-slate-900/90 p-3 rounded-lg border border-slate-800">
@@ -528,7 +546,7 @@
           <!-- Dynamic GraphQL Payload -->
           <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
             <div class="text-cyan-400 font-bold font-sans flex items-center space-x-2">
-              <i data-lucide="database" class="w-4 h-4"></i>
+              <i data-lucide="database" class="w-4 h-4" aria-hidden="true"></i>
               <span>Customer Context API Metafield Payload</span>
             </div>
             <pre id="graphqlPayload" class="text-[11px] text-slate-300 overflow-x-auto whitespace-pre-wrap leading-relaxed bg-slate-900/90 p-3 rounded-lg border border-slate-800">
@@ -553,7 +571,7 @@
 
         <div class="mt-6 border-t border-slate-800 pt-4 flex justify-between items-center text-xs text-slate-400">
           <span>Engine Status: <strong class="text-emerald-400">OPERATIONAL (0ms latency)</strong></span>
-          <button onclick="toggleEngineModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg font-semibold transition">
+          <button onclick="toggleEngineModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg font-semibold transition touch-target">
             Close Rules Inspector
           </button>
         </div>
@@ -564,7 +582,7 @@
 
   <script type="module">
     /* ==========================================================================
-       HĀNA RUNNER EDGE AI ENGINE & EXTENDED PRODUCT CATALOG
+       HĀNA RUNNER EDGE AI ENGINE - DYNAMIC INVENTORY & MULTI-TURN AI
        ========================================================================== */
 
     import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2';
@@ -584,214 +602,141 @@
     };
 
     let slmPipeline = null;
-    let slmLoading = false;
+    let conversationHistory = [];
 
-    // Extended 7-Category Product Database with Stage, Mile Marker & Persona tags
+    // Virtual Inventory Tracking Table
+    const virtualInventory = {
+      'p1': 42, 'p2': 18, 'p3': 100, 'p4': 12, 'p5': 85,
+      'p6': 25, 'p7': 15, 'p8': 30, 'p9': 50, 'p10': 20,
+      'p11': 14, 'p12': 60, 'p13': 8, 'p14': 200, 'p15': 35, 'p16': 50
+    };
+
+    // Extended 7-Category Product Database
     const productCatalog = [
-      // PREPARE STAGE - PERMITS & SAFETY
       {
-        id: 'p1',
-        title: 'Hana Ginger Relief & Motion Sickness Kit',
-        price: 18.00,
-        stage: 'prepare',
-        category: 'permits-safety',
-        personas: ['sightseer', 'cultural', 'adventure', 'angler'],
+        id: 'p1', title: 'Hana Ginger Relief & Motion Sickness Kit', basePrice: 18.00,
+        stage: 'prepare', category: 'permits-safety', personas: ['sightseer', 'cultural', 'adventure', 'angler'],
         image: 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?auto=format&fit=crop&w=600&q=80',
-        badge: 'Top Safety Item',
-        description: 'Organic Hawaiian ginger chews, pressure-point wristbands, and motion sickness patches for 62 winding curves.',
+        badge: 'Top Safety Item', description: 'Organic Hawaiian ginger chews, pressure-point wristbands, and motion sickness patches for 62 winding curves.',
         mmMin: 0, mmMax: 45
       },
       {
-        id: 'p2',
-        title: 'Waiʻānapanapa Black Sand Beach Park Entry Permit',
-        price: 15.00,
-        stage: 'prepare',
-        category: 'permits-safety',
-        personas: ['sightseer', 'cultural', 'adventure', 'angler'],
+        id: 'p2', title: 'Waiʻānapanapa Black Sand Beach Park Entry Permit', basePrice: 15.00,
+        stage: 'prepare', category: 'permits-safety', personas: ['sightseer', 'cultural', 'adventure', 'angler'],
         image: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=600&q=80',
-        badge: 'Official State Voucher',
-        description: 'Required advance voucher for vehicle parking and entry to the famous Black Sand Beach at MM 32.',
+        badge: 'Official State Voucher', description: 'Required advance voucher for vehicle parking and entry to the famous Black Sand Beach at MM 32.',
         mmMin: 0, mmMax: 35
       },
       {
-        id: 'p3',
-        title: 'Offline Audio GPS Road Guide & Map App',
-        price: 12.99,
-        stage: 'prepare',
-        category: 'permits-safety',
-        personas: ['sightseer', 'adventure', 'cultural'],
+        id: 'p3', title: 'Offline Audio GPS Road Guide & Map App', basePrice: 12.99,
+        stage: 'prepare', category: 'permits-safety', personas: ['sightseer', 'adventure', 'cultural'],
         image: 'https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1?auto=format&fit=crop&w=600&q=80',
-        badge: 'Offline Cell Ready',
-        description: 'Voice-guided narration triggerable by offline GPS covering Hawaiian legends, waterfall turnouts, and bridge safety.',
+        badge: 'Offline Cell Ready', description: 'Voice-guided narration triggerable by offline GPS covering Hawaiian legends, waterfall turnouts, and bridge safety.',
         mmMin: 0, mmMax: 45
       },
       {
-        id: 'p4',
-        title: 'Emergency Roadside & First Aid Trail Pack',
-        price: 29.50,
-        stage: 'prepare',
-        category: 'permits-safety',
-        personas: ['adventure', 'sightseer', 'angler'],
+        id: 'p4', title: 'Emergency Roadside & First Aid Trail Pack', basePrice: 29.50,
+        stage: 'prepare', category: 'permits-safety', personas: ['adventure', 'sightseer', 'angler'],
         image: 'https://images.unsplash.com/photo-1603398938378-e54eab446dde?auto=format&fit=crop&w=600&q=80',
-        badge: 'Essential Safety',
-        description: 'Waterproof medical kit, thermal blanket, tourniquet, and multi-tool survival gear for remote East Maui trails.',
+        badge: 'Essential Safety', description: 'Waterproof medical kit, thermal blanket, tourniquet, and multi-tool survival gear for remote East Maui trails.',
         mmMin: 0, mmMax: 45
       },
-
-      // PREPARE STAGE - WATER & SNORKEL
       {
-        id: 'p5',
-        title: 'Reef-Safe Mineral Sunscreen (SPF 50)',
-        price: 22.00,
-        stage: 'prepare',
-        category: 'water-snorkel',
-        personas: ['sightseer', 'angler', 'adventure', 'cultural'],
+        id: 'p5', title: 'Reef-Safe Mineral Sunscreen (SPF 50)', basePrice: 22.00,
+        stage: 'prepare', category: 'water-snorkel', personas: ['sightseer', 'angler', 'adventure', 'cultural'],
         image: 'https://images.unsplash.com/photo-1598440947619-2c35fc9aa908?auto=format&fit=crop&w=600&q=80',
-        badge: 'Maui Eco Law Compliant',
-        description: '100% Non-nano zinc oxide reef sunscreen protects Hana delicate ocean eco-system.',
+        badge: 'Maui Eco Law Compliant', description: '100% Non-nano zinc oxide reef sunscreen protects Hana delicate ocean eco-system.',
         mmMin: 0, mmMax: 45
       },
       {
-        id: 'p6',
-        title: 'Anti-Fog Dry Top Snorkel & Mask Combo',
-        price: 36.00,
-        stage: 'prepare',
-        category: 'water-snorkel',
-        personas: ['sightseer', 'adventure', 'angler'],
+        id: 'p6', title: 'Anti-Fog Dry Top Snorkel & Mask Combo', basePrice: 36.00,
+        stage: 'prepare', category: 'water-snorkel', personas: ['sightseer', 'adventure', 'angler'],
         image: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=600&q=80',
-        badge: 'Crystal Clear Optics',
-        description: 'Tempered glass mask with dry-top snorkel valve perfect for Hana Bay and Waiʻānapanapa tidal pools.',
+        badge: 'Crystal Clear Optics', description: 'Tempered glass mask with dry-top snorkel valve perfect for Hana Bay and Waiʻānapanapa tidal pools.',
         mmMin: 0, mmMax: 45
       },
-
-      // TRAVEL STAGE - FOOD & PRODUCE
       {
-        id: 'p7',
-        title: 'Keʻanae Fresh Warm Banana Bread & Coconut Ice',
-        price: 12.50,
-        stage: 'travel',
-        category: 'food-produce',
-        personas: ['sightseer', 'cultural', 'adventure', 'angler'],
+        id: 'p7', title: 'Keʻanae Fresh Warm Banana Bread & Coconut Ice', basePrice: 12.50,
+        stage: 'travel', category: 'food-produce', personas: ['sightseer', 'cultural', 'adventure', 'angler'],
         image: 'https://images.unsplash.com/photo-1603532648955-039310d9ed75?auto=format&fit=crop&w=600&q=80',
-        badge: 'Pick Up at MM 16',
-        description: 'Famous Aunty Sandy Keʻanae Peninsula fresh banana bread order reservation.',
+        badge: 'Pick Up at MM 16', description: 'Famous Aunty Sandy Keʻanae Peninsula fresh banana bread order reservation.',
         mmMin: 12, mmMax: 20
       },
       {
-        id: 'p8',
-        title: 'Fresh Lilikoi & Organic Maui Passionfruit Preserves',
-        price: 14.00,
-        stage: 'travel',
-        category: 'food-produce',
-        personas: ['sightseer', 'cultural'],
+        id: 'p8', title: 'Fresh Lilikoi & Organic Maui Passionfruit Preserves', basePrice: 14.00,
+        stage: 'travel', category: 'food-produce', personas: ['sightseer', 'cultural'],
         image: 'https://images.unsplash.com/photo-1589135233689-d58b3012e94b?auto=format&fit=crop&w=600&q=80',
-        badge: 'Twin Falls MM 2',
-        description: 'Artisanal local fruit jam made from East Maui family orchards.',
+        badge: 'Twin Falls MM 2', description: 'Artisanal local fruit jam made from East Maui family orchards.',
         mmMin: 2, mmMax: 15
       },
       {
-        id: 'p9',
-        title: 'Hana Town Chilled Local Cold Brew Coffee',
-        price: 7.50,
-        stage: 'travel',
-        category: 'food-produce',
-        personas: ['sightseer', 'cultural', 'adventure', 'angler'],
+        id: 'p9', title: 'Hana Town Chilled Local Cold Brew Coffee', basePrice: 7.50,
+        stage: 'travel', category: 'food-produce', personas: ['sightseer', 'cultural', 'adventure', 'angler'],
         image: 'https://images.unsplash.com/photo-1517701604599-bb29b565090c?auto=format&fit=crop&w=600&q=80',
-        badge: 'MM 42 Refreshment',
-        description: '100% East Maui grown shade coffee brewed for refreshing energy after driving.',
+        badge: 'MM 42 Refreshment', description: '100% East Maui grown shade coffee brewed for refreshing energy after driving.',
         mmMin: 35, mmMax: 45
       },
-
-      // TRAVEL STAGE - FISHING & TACKLE
       {
-        id: 'p10',
-        title: 'Shore Caster Ulua & Omilu Reef Fishing Rig',
-        price: 45.00,
-        stage: 'travel',
-        category: 'fishing-tackle',
-        personas: ['angler'],
+        id: 'p10', title: 'Shore Caster Ulua & Omilu Reef Fishing Rig', basePrice: 45.00,
+        stage: 'travel', category: 'fishing-tackle', personas: ['angler'],
         image: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=600&q=80',
-        badge: 'Angler Specific',
-        description: 'Lead-free bio-degradable sinkers, circle hooks, and braided line set for East Maui rocky shorelines.',
+        badge: 'Angler Specific', description: 'Lead-free bio-degradable sinkers, circle hooks, and braided line set for East Maui rocky shorelines.',
         mmMin: 10, mmMax: 45
       },
-
-      // TRAVEL STAGE - CAMPING & OUTDOOR
       {
-        id: 'p11',
-        title: 'Heavy Duty Felt-Sole Stream & Waterfall Booties',
-        price: 38.00,
-        stage: 'travel',
-        category: 'camping-outdoor',
-        personas: ['adventure', 'sightseer'],
+        id: 'p11', title: 'Heavy Duty Felt-Sole Stream & Waterfall Booties', basePrice: 38.00,
+        stage: 'travel', category: 'camping-outdoor', personas: ['adventure', 'sightseer'],
         image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=600&q=80',
-        badge: 'Anti-Slip Grip',
-        description: 'Essential footwear for wet rock crossings at Twin Falls (MM 2) and Bamboo Forest trails.',
+        badge: 'Anti-Slip Grip', description: 'Essential footwear for wet rock crossings at Twin Falls (MM 2) and Bamboo Forest trails.',
         mmMin: 2, mmMax: 40
       },
       {
-        id: 'p12',
-        title: 'Ultra-Lightweight Rain Poncho & Dry Bag Set',
-        price: 24.00,
-        stage: 'travel',
-        category: 'camping-outdoor',
-        personas: ['adventure', 'sightseer', 'cultural'],
+        id: 'p12', title: 'Ultra-Lightweight Rain Poncho & Dry Bag Set', basePrice: 24.00,
+        stage: 'travel', category: 'camping-outdoor', personas: ['adventure', 'sightseer', 'cultural'],
         image: 'https://images.unsplash.com/photo-1510018572596-e40e2619b412?auto=format&fit=crop&w=600&q=80',
-        badge: 'Rainforest Ready',
-        description: 'Breathable waterproof poncho and 10L dry sack to protect electronics during tropical showers.',
+        badge: 'Rainforest Ready', description: 'Breathable waterproof poncho and 10L dry sack to protect electronics during tropical showers.',
         mmMin: 0, mmMax: 45
       },
-
-      // REMEMBER STAGE - CULTURAL KEEPSAKES
       {
-        id: 'p13',
-        title: 'Hand-Carved Maui Koa Wood Hana Keepsake Box',
-        price: 85.00,
-        stage: 'remember',
-        category: 'cultural-keepsakes',
-        personas: ['cultural', 'sightseer'],
+        id: 'p13', title: 'Hand-Carved Maui Koa Wood Hana Keepsake Box', basePrice: 85.00,
+        stage: 'remember', category: 'cultural-keepsakes', personas: ['cultural', 'sightseer'],
         image: 'https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=600&q=80',
-        badge: 'Locally Crafted',
-        description: 'Engraved with coordinates of East Maui coast line, made from fallen local Koa timber.',
+        badge: 'Locally Crafted', description: 'Engraved with coordinates of East Maui coast line, made from fallen local Koa timber.',
         mmMin: 0, mmMax: 45
       },
       {
-        id: 'p14',
-        title: 'Custom Photo Book: "My Journey on the Road to Hana"',
-        price: 49.00,
-        stage: 'remember',
-        category: 'cultural-keepsakes',
-        personas: ['sightseer', 'adventure', 'cultural', 'angler'],
+        id: 'p14', title: 'Custom Photo Book: "My Journey on the Road to Hana"', basePrice: 49.00,
+        stage: 'remember', category: 'cultural-keepsakes', personas: ['sightseer', 'adventure', 'cultural', 'angler'],
         image: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=600&q=80',
-        badge: 'Custom Memories',
-        description: 'Hardcover souvenir album with personalized route maps and your uploaded road photos.',
+        badge: 'Custom Memories', description: 'Hardcover souvenir album with personalized route maps and your uploaded road photos.',
         mmMin: 0, mmMax: 45
       },
       {
-        id: 'p15',
-        title: 'Hana Organic Macadamia & Hot Sauce Gift Box',
-        price: 34.00,
-        stage: 'remember',
-        category: 'cultural-keepsakes',
-        personas: ['cultural', 'sightseer', 'angler'],
+        id: 'p15', title: 'Hana Organic Macadamia & Hot Sauce Gift Box', basePrice: 34.00,
+        stage: 'remember', category: 'cultural-keepsakes', personas: ['cultural', 'sightseer', 'angler'],
         image: 'https://images.unsplash.com/photo-1596040033229-a9821ebd058d?auto=format&fit=crop&w=600&q=80',
-        badge: 'Artisanal Flavor',
-        description: 'Small batch Hawaiian chili pepper water, roasted mac nuts, and Hana fruit preserves shipped to your home.',
+        badge: 'Artisanal Flavor', description: 'Small batch Hawaiian chili pepper water, roasted mac nuts, and Hana fruit preserves shipped to your home.',
         mmMin: 0, mmMax: 45
       },
       {
-        id: 'p16',
-        title: 'Native Hawaiian Seed Growing Kit (Koa & Taro)',
-        price: 19.50,
-        stage: 'remember',
-        category: 'cultural-keepsakes',
-        personas: ['cultural', 'sightseer'],
+        id: 'p16', title: 'Native Hawaiian Seed Growing Kit (Koa & Taro)', basePrice: 19.50,
+        stage: 'remember', category: 'cultural-keepsakes', personas: ['cultural', 'sightseer'],
         image: 'https://images.unsplash.com/photo-1530836369250-ef72a3f5cda8?auto=format&fit=crop&w=600&q=80',
-        badge: 'Mālama ʻĀina',
-        description: 'Eco-certified native seeds with biodegradable planting pots to grow Hawaiian flora at home.',
+        badge: 'Mālama ʻĀina', description: 'Eco-certified native seeds with biodegradable planting pots to grow Hawaiian flora at home.',
         mmMin: 0, mmMax: 45
       }
     ];
+
+    // Dynamic Location-Aware Pricing Algorithm
+    function getDynamicPrice(item) {
+      if (engineState.stage !== 'travel') return item.basePrice;
+      const mm = engineState.mileMarker;
+      const midPoint = (item.mmMin + item.mmMax) / 2;
+      const distance = Math.abs(mm - midPoint);
+      // Surge variance: items closer to active mile marker get slight demand adjustment (+0% to +8%)
+      const factor = 1 + (Math.max(0, 15 - distance) / 15) * 0.08;
+      return Math.round(item.basePrice * factor * 100) / 100;
+    }
 
     // Initialize application on load
     window.onload = function() {
@@ -806,17 +751,17 @@
     window.setTravelStage = function(stage) {
       engineState.stage = stage;
 
-      // Update UI Stage Buttons
       ['prepare', 'travel', 'remember'].forEach(s => {
         const btn = document.getElementById(`stageBtn-${s}`);
         if (s === stage) {
-          btn.className = "flex items-center space-x-2 px-3 sm:px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-200 bg-emerald-600 text-white shadow-md active-stage-glow";
+          btn.className = "flex items-center space-x-2 px-3 sm:px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-200 bg-emerald-600 text-white shadow-md active-stage-glow touch-target";
+          btn.setAttribute('aria-pressed', 'true');
         } else {
-          btn.className = "flex items-center space-x-2 px-3 sm:px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-200 text-slate-400 hover:text-white hover:bg-slate-800/60";
+          btn.className = "flex items-center space-x-2 px-3 sm:px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-200 text-slate-400 hover:text-white hover:bg-slate-800/60 touch-target";
+          btn.setAttribute('aria-pressed', 'false');
         }
       });
 
-      // Show/Hide Mile Marker Slider & Interactive Map based on Stage
       const mmContainer = document.getElementById('mileMarkerContainer');
       const interactiveMap = document.getElementById('interactiveMapSection');
       if (stage === 'travel') {
@@ -847,9 +792,9 @@
         const btn = document.getElementById(`catBtn-${c}`);
         if (btn) {
           if (c === cat) {
-            btn.className = "px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-600 text-white border border-emerald-500/50 shadow-sm transition";
+            btn.className = "px-3.5 py-2 rounded-full text-xs font-semibold bg-emerald-600 text-white border border-emerald-500/50 shadow-sm transition touch-target";
           } else {
-            btn.className = "px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition";
+            btn.className = "px-3.5 py-2 rounded-full text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition touch-target";
           }
         }
       });
@@ -862,7 +807,6 @@
       engineState.mileMarker = parseInt(val, 10);
       document.getElementById('mileMarkerLabel').textContent = `MM ${val}`;
 
-      // Calculate cell signal status based on MM
       if (engineState.mileMarker >= 12 && engineState.mileMarker <= 38) {
         engineState.cellSignal = 'NO SIGNAL / Offline Cache Active';
       } else if (engineState.mileMarker > 38) {
@@ -950,22 +894,17 @@
       const grid = document.getElementById('productGrid');
       grid.innerHTML = '';
 
-      // Dynamic Filtering Engine Logic
       const filtered = productCatalog.filter(item => {
-        // Match Stage
         if (item.stage !== engineState.stage) return false;
 
-        // Match Category Filter
         if (engineState.categoryFilter !== 'all' && item.category !== engineState.categoryFilter) {
           return false;
         }
 
-        // Match Persona Tag
         if (item.personas && !item.personas.includes(engineState.persona)) {
           if (engineState.persona === 'angler' && !item.personas.includes('angler')) return false;
         }
 
-        // Match Mile Marker Range if in travel mode
         if (engineState.stage === 'travel') {
           if (engineState.mileMarker < item.mmMin || engineState.mileMarker > item.mmMax) {
             return false;
@@ -980,7 +919,7 @@
       if (filtered.length === 0) {
         grid.innerHTML = `
           <div class="col-span-full bg-slate-900/60 p-8 rounded-2xl border border-slate-800 text-center space-y-2">
-            <i data-lucide="compass" class="w-8 h-8 text-slate-500 mx-auto"></i>
+            <i data-lucide="compass" class="w-8 h-8 text-slate-500 mx-auto" aria-hidden="true"></i>
             <p class="text-sm font-semibold text-slate-300">No specific items for this exact context or filter</p>
             <p class="text-xs text-slate-500">Try adjusting the Mile Marker slider above, switching category filter, or changing visitor persona.</p>
           </div>
@@ -990,29 +929,35 @@
       }
 
       filtered.forEach(item => {
+        const dynamicPrice = getDynamicPrice(item);
+        const stock = virtualInventory[item.id] || 25;
+
         const card = document.createElement('div');
         card.className = "bg-slate-900/90 rounded-xl overflow-hidden border border-slate-800 hover:border-slate-700 transition-all duration-300 flex flex-col group shadow-lg";
 
         card.innerHTML = `
           <div class="relative h-40 overflow-hidden bg-slate-950">
-            <img src="${item.image}" alt="${item.title}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90">
+            <img src="${item.image}" alt="${item.title}" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90">
             <span class="absolute top-2 left-2 bg-slate-950/80 backdrop-blur-md text-emerald-400 border border-emerald-800/60 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
               ${item.badge}
             </span>
             <span class="absolute bottom-2 right-2 bg-slate-950/90 text-white font-mono font-bold text-xs px-2 py-1 rounded-md">
-              $${item.price.toFixed(2)}
+              $${dynamicPrice.toFixed(2)}
             </span>
           </div>
 
           <div class="p-4 flex-1 flex flex-col justify-between space-y-3">
             <div>
-              <h3 class="text-sm font-bold text-white leading-snug group-hover:text-emerald-300 transition-colors">${item.title}</h3>
+              <div class="flex justify-between items-start">
+                <h3 class="text-sm font-bold text-white leading-snug group-hover:text-emerald-300 transition-colors">${item.title}</h3>
+                <span class="text-[10px] font-mono text-slate-400 bg-slate-950 px-1.5 py-0.5 rounded border border-slate-800 ml-1">Stock: ${stock}</span>
+              </div>
               <p class="text-xs text-slate-400 mt-1 line-clamp-2">${item.description}</p>
             </div>
 
-            <button onclick="addToCart('${item.id}')" class="w-full py-2 px-3 rounded-lg bg-emerald-600/90 hover:bg-emerald-500 text-white font-semibold text-xs flex items-center justify-center space-x-1.5 transition shadow-md">
-              <i data-lucide="plus" class="w-3.5 h-3.5"></i>
-              <span>Add to Travel Pack</span>
+            <button onclick="addToCart('${item.id}')" aria-label="Add ${item.title} to travel pack" class="w-full py-2.5 px-3 rounded-lg bg-emerald-600/90 hover:bg-emerald-500 text-white font-semibold text-xs flex items-center justify-center space-x-1.5 transition shadow-md touch-target">
+              <i data-lucide="plus" class="w-3.5 h-3.5" aria-hidden="true"></i>
+              <span>Add to Travel Pack ($${dynamicPrice.toFixed(2)})</span>
             </button>
           </div>
         `;
@@ -1027,14 +972,23 @@
       const item = productCatalog.find(p => p.id === productId);
       if (!item) return;
 
+      if (virtualInventory[productId] <= 0) {
+        alert('Item currently out of stock in local reserve!');
+        return;
+      }
+
+      const dynamicPrice = getDynamicPrice(item);
       const existing = engineState.cart.find(c => c.id === productId);
+
       if (existing) {
         existing.qty += 1;
       } else {
-        engineState.cart.push({ ...item, qty: 1 });
+        engineState.cart.push({ ...item, price: dynamicPrice, qty: 1 });
       }
 
+      virtualInventory[productId] -= 1;
       updateCartUI();
+      renderCatalog();
       openCart();
     };
 
@@ -1046,6 +1000,7 @@
 
       const totalItems = engineState.cart.reduce((sum, i) => sum + i.qty, 0);
       badge.textContent = totalItems;
+      badge.setAttribute('aria-label', `${totalItems} items in cart`);
 
       if (engineState.cart.length === 0) {
         container.innerHTML = `<p class="text-xs text-slate-500 italic text-center py-8">Your cart is currently empty.</p>`;
@@ -1063,14 +1018,14 @@
         div.className = 'flex items-center justify-between bg-slate-950 p-3 rounded-xl border border-slate-800 text-xs';
         div.innerHTML = `
           <div class="flex items-center space-x-3">
-            <img src="${item.image}" class="w-10 h-10 rounded-lg object-cover">
+            <img src="${item.image}" alt="${item.title}" class="w-10 h-10 rounded-lg object-cover">
             <div>
               <p class="font-bold text-white line-clamp-1">${item.title}</p>
               <p class="text-slate-400 font-mono">$${item.price.toFixed(2)} x ${item.qty}</p>
             </div>
           </div>
-          <button onclick="removeFromCart('${item.id}')" class="text-slate-500 hover:text-red-400 p-1">
-            <i data-lucide="trash-2" class="w-4 h-4"></i>
+          <button onclick="removeFromCart('${item.id}')" aria-label="Remove ${item.title} from cart" class="text-slate-500 hover:text-red-400 p-2 touch-target">
+            <i data-lucide="trash-2" class="w-4 h-4" aria-hidden="true"></i>
           </button>
         `;
         container.appendChild(div);
@@ -1084,8 +1039,13 @@
     }
 
     window.removeFromCart = function(id) {
+      const itemInCart = engineState.cart.find(i => i.id === id);
+      if (itemInCart) {
+        virtualInventory[id] += itemInCart.qty;
+      }
       engineState.cart = engineState.cart.filter(i => i.id !== id);
       updateCartUI();
+      renderCatalog();
     };
 
     window.togglePledge = function(checked) {
@@ -1122,7 +1082,6 @@
       document.getElementById('jsonCatFilter').textContent = `"${engineState.categoryFilter}"`;
       document.getElementById('jsonPledge').textContent = engineState.malamaPledge;
 
-      // Dynamic Liquid preview generator
       const liquidText = `{% comment %} Shopify Dynamic Engine: Hana Rules Context {% endcomment %}
 {% assign stage = "${engineState.stage}" %}
 {% assign persona = "${engineState.persona}" %}
@@ -1140,7 +1099,6 @@
 
       document.getElementById('liquidRulesCode').textContent = liquidText;
 
-      // Dynamic GraphQL payload
       const graphqlObj = {
         customerContext: {
           travelStage: engineState.stage,
@@ -1184,7 +1142,6 @@
       try {
         progressContainer.classList.remove('hidden');
         statusText.textContent = 'Loading Hugging Face WASM...';
-        slmLoading = true;
 
         slmPipeline = await pipeline('text-generation', 'Xenova/LaMini-Flan-T5-77M', {
           progress_callback: (p) => {
@@ -1201,14 +1158,12 @@
         statusDot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse';
         progressContainer.classList.add('hidden');
         document.getElementById('inferenceMode').textContent = 'Mode: Hugging Face WASM SLM (Client-Side)';
-        slmLoading = false;
       } catch (err) {
         console.warn('WASM model load fallback active:', err);
         statusText.textContent = 'Offline Fallback Engine Active';
         statusDot.className = 'w-2.5 h-2.5 rounded-full bg-amber-400';
         progressContainer.classList.add('hidden');
         document.getElementById('inferenceMode').textContent = 'Mode: Rule-Based Fallback Engine';
-        slmLoading = false;
       }
     }
 
@@ -1240,7 +1195,7 @@
       // Loading indicator
       const loadingDiv = document.createElement('div');
       loadingDiv.className = 'text-slate-400 italic flex items-center space-x-1.5';
-      loadingDiv.innerHTML = `<i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin text-emerald-400"></i><span>Aunty Hana is typing...</span>`;
+      loadingDiv.innerHTML = `<i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin text-emerald-400" aria-hidden="true"></i><span>Aunty Hana is typing...</span>`;
       chatOutput.appendChild(loadingDiv);
       chatOutput.scrollTop = chatOutput.scrollHeight;
       if (window.lucide) lucide.createIcons();
@@ -1252,7 +1207,9 @@
         let aiText = "";
 
         if (slmPipeline) {
-          const prompt = `Context: Stage=${engineState.stage}, MileMarker=${engineState.mileMarker}, Persona=${engineState.persona}. Question: ${userQuery}`;
+          // Construct prompt with multi-turn conversation context
+          const historyText = conversationHistory.slice(-2).map(h => `Q:${h.q} A:${h.a}`).join(" ");
+          const prompt = `Context: Stage=${engineState.stage}, MM=${engineState.mileMarker}, Persona=${engineState.persona}. ${historyText} Question: ${userQuery}`;
           const res = await slmPipeline(prompt, { max_new_tokens: 60, temperature: 0.7 });
           if (res && res[0] && res[0].generated_text) {
             aiText = res[0].generated_text;
@@ -1262,6 +1219,9 @@
         if (!aiText) {
           aiText = getStaticFallbackResponse(userQuery);
         }
+
+        // Store turn in memory history
+        conversationHistory.push({ q: userQuery, a: aiText });
 
         const endTime = performance.now();
         const latency = Math.round(endTime - startTime);
