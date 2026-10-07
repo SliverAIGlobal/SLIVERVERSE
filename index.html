@@ -1,0 +1,1312 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-900 text-slate-100">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HĀNA RUNNER | Dynamic Shopify Engine for Road to Hana</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Font Family -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,400&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            hana: {
+              green: '#0F4C3A',
+              emerald: '#135E4B',
+              leaf: '#2A8B68',
+              sand: '#E8DFD1',
+              volcanic: '#1A1817',
+              ocean: '#0E6B82',
+              sunset: '#E06D53',
+              gold: '#D4AF37'
+            }
+          },
+          fontFamily: {
+            sans: ['Plus Jakarta Sans', 'sans-serif'],
+            serif: ['Playfair Display', 'serif']
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Custom scrollbars & smooth transitions */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #0f172a; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #475569; }
+    .glass-panel {
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .active-stage-glow {
+      box-shadow: 0 0 20px -5px rgba(42, 139, 104, 0.5);
+    }
+  </style>
+</head>
+<body class="h-full flex flex-col font-sans antialiased overflow-x-hidden selection:bg-hana-leaf selection:text-white">
+
+  <!-- Top Navigation Header -->
+  <header class="sticky top-0 z-40 border-b border-slate-800 bg-slate-950/90 backdrop-filter backdrop-blur-md">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+
+        <!-- Brand / Title -->
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-hana-leaf to-hana-green flex items-center justify-center text-emerald-200 font-bold text-xl shadow-lg border border-emerald-500/20">
+            🌺
+          </div>
+          <div>
+            <div class="flex items-center space-x-2">
+              <span class="font-serif font-bold text-lg tracking-wide text-white">HĀNA RUNNER</span>
+              <span class="bg-emerald-950 text-emerald-400 border border-emerald-800/60 text-[10px] font-semibold px-2 py-0.5 rounded-full uppercase tracking-wider">Engine v2.4 Edge</span>
+            </div>
+            <p class="text-xs text-slate-400 hidden sm:block">Dynamic Contextual Shopify Commerce Platform</p>
+          </div>
+        </div>
+
+        <!-- Global Action Controls -->
+        <div class="flex items-center space-x-3">
+
+          <!-- Back-Engine Rules Inspector Toggle Button -->
+          <button id="toggleEngineBtn" onclick="toggleEngineModal()" class="flex items-center space-x-2 px-3 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700 transition text-xs font-medium">
+            <i data-lucide="cpu" class="w-4 h-4 text-emerald-400"></i>
+            <span class="hidden sm:inline">Shopify Engine Rules</span>
+            <span class="bg-slate-900 text-slate-300 px-1.5 py-0.5 rounded text-[10px] font-mono border border-slate-800">Liquid / Metafields</span>
+          </button>
+
+          <!-- Shopping Cart Icon with Badge -->
+          <button onclick="openCart()" class="relative p-2 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700 transition">
+            <i data-lucide="shopping-bag" class="w-5 h-5"></i>
+            <span id="cartBadge" class="absolute -top-1 -right-1 bg-hana-sunset text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center shadow-md">0</span>
+          </button>
+
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Context Selector Banner -->
+  <section class="bg-slate-950 border-b border-slate-800/80 py-3 px-4 shadow-inner">
+    <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3">
+
+      <!-- Travel Stage Selector -->
+      <div class="flex items-center space-x-1 sm:space-x-2 bg-slate-900/90 p-1 rounded-xl border border-slate-800 w-full md:w-auto justify-between sm:justify-start">
+        <button id="stageBtn-prepare" onclick="setTravelStage('prepare')" class="flex items-center space-x-2 px-3 sm:px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-200 text-slate-400 hover:text-white">
+          <i data-lucide="compass" class="w-4 h-4"></i>
+          <span>1. Preparing</span>
+        </button>
+        <button id="stageBtn-travel" onclick="setTravelStage('travel')" class="flex items-center space-x-2 px-3 sm:px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-200 text-slate-400 hover:text-white">
+          <i data-lucide="navigation" class="w-4 h-4"></i>
+          <span>2. On the Road</span>
+        </button>
+        <button id="stageBtn-remember" onclick="setTravelStage('remember')" class="flex items-center space-x-2 px-3 sm:px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-200 text-slate-400 hover:text-white">
+          <i data-lucide="heart" class="w-4 h-4"></i>
+          <span>3. Remembering</span>
+        </button>
+      </div>
+
+      <!-- Visitor Interest Profile Selector -->
+      <div class="flex items-center space-x-2 text-xs text-slate-400 w-full md:w-auto justify-end">
+        <span class="hidden sm:inline">Visitor Persona:</span>
+        <select id="personaSelect" onchange="updateVisitorPersona(this.value)" class="bg-slate-900 border border-slate-700 text-slate-200 rounded-lg text-xs px-2.5 py-1.5 focus:ring-1 focus:ring-emerald-500 outline-none">
+          <option value="sightseer">🌴 First-Time Sightseer (Family/Safety focus)</option>
+          <option value="angler">🎣 Local & Eco Angler (Shore Fishing/Reef-Safe)</option>
+          <option value="cultural">🌺 Cultural Explorer (Respect/Malama Hana)</option>
+          <option value="adventure">🥾 Rugged Hiker / Waterfall Hunter</option>
+        </select>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Live Context Engine Alert Bar -->
+  <div id="liveEngineAlertBar" class="bg-gradient-to-r from-emerald-950 via-slate-900 to-slate-950 border-b border-emerald-900/40 px-4 py-2 text-xs text-slate-300">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
+      <div class="flex items-center space-x-2 font-mono">
+        <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span class="text-emerald-400 font-semibold">CONTEXT ENGINE ACTIVE:</span>
+        <span id="activeContextText" class="text-slate-200">Stage: Preparing | Target: Kahului Departure | Local Weather: 82°F Sunshine</span>
+      </div>
+
+      <!-- Mile Marker Slider (Active when Traveling stage selected) -->
+      <div id="mileMarkerContainer" class="hidden flex items-center space-x-3 bg-slate-900/80 px-3 py-1 rounded-lg border border-slate-800">
+        <i data-lucide="map-pin" class="w-3.5 h-3.5 text-emerald-400"></i>
+        <label for="mileSlider" class="text-[11px] font-semibold text-slate-300">Mile Marker:</label>
+        <input type="range" id="mileSlider" min="0" max="45" value="0" step="1" oninput="onMileMarkerChange(this.value)" class="w-24 sm:w-32 accent-emerald-500 cursor-pointer">
+        <span id="mileMarkerLabel" class="font-mono text-emerald-400 font-bold min-w-[50px]">MM 0</span>
+      </div>
+    </div>
+  </div>
+
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+    <!-- Left Column: Dynamic Storefront Presentation (8 cols on lg) -->
+    <div class="lg:col-span-8 space-x-0 space-y-6">
+
+      <!-- Dynamic Stage Hero Card -->
+      <div id="heroCard" class="relative rounded-2xl overflow-hidden glass-panel border border-slate-800 shadow-2xl transition-all duration-500 min-h-[220px] flex flex-col justify-end p-6 md:p-8">
+        <div id="heroBgImage" class="absolute inset-0 bg-cover bg-center opacity-30 transition-all duration-700" style="background-image: url('https://images.unsplash.com/photo-1542259009477-d625272157b7?auto=format&fit=crop&w=1200&q=80');"></div>
+        <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/60 to-transparent"></div>
+
+        <div class="relative z-10 space-y-2">
+          <div class="flex items-center space-x-2">
+            <span id="heroBadge" class="px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+              Stage 1: Pre-Departure Prep
+            </span>
+            <span id="heroLocationTag" class="text-xs font-mono text-slate-400">Location: Kahului / Airport Hub</span>
+          </div>
+
+          <h1 id="heroTitle" class="font-serif text-2xl md:text-4xl font-bold text-white tracking-tight leading-tight">
+            Prepare for the Road to Hana
+          </h1>
+
+          <p id="heroDescription" class="text-sm md:text-base text-slate-300 max-w-2xl">
+            Stock up on motion sickness essentials, reserve black sand beach park permits, rent reef-safe fishing tackle, and load offline road guides before cell reception disappears.
+          </p>
+
+          <div id="heroActions" class="flex flex-wrap gap-3 pt-3">
+            <button onclick="scrollToProducts()" class="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs sm:text-sm flex items-center space-x-2 shadow-lg shadow-emerald-900/30 transition">
+              <span>View Recommended Gear & Permits</span>
+              <i data-lucide="arrow-down" class="w-4 h-4"></i>
+            </button>
+            <button onclick="showProtocolModal()" class="px-4 py-2 rounded-lg bg-slate-800/90 hover:bg-slate-700 text-slate-200 font-medium text-xs sm:text-sm flex items-center space-x-2 border border-slate-700 transition">
+              <i data-lucide="shield-check" class="w-4 h-4 text-emerald-400"></i>
+              <span>Mālama Hana Etiquette Guide</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Safety & Local Protocol Alert Banner (Dynamic) -->
+      <div id="protocolAlertBox" class="p-4 rounded-xl bg-amber-950/40 border border-amber-800/50 flex items-start space-x-3 text-amber-200 text-xs sm:text-sm">
+        <i data-lucide="alert-triangle" class="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5"></i>
+        <div class="space-y-1">
+          <p class="font-bold text-amber-300" id="alertTitle">Local Protocol & Safety Prompt</p>
+          <p id="alertBody" class="text-slate-300 text-xs">
+            The Hana Highway features 62 sharp curves and 59 one-lane bridges. Always yield to local traffic, pull over to let locals pass, do NOT block emergency turnouts, and respect private property signs.
+          </p>
+        </div>
+      </div>
+
+      <div id="interactiveMapSection" class="hidden space-y-3">
+        <div class="flex items-center justify-between">
+          <h2 class="text-base font-bold text-white flex items-center space-x-2">
+            <i data-lucide="map" class="w-4 h-4 text-emerald-400"></i>
+            <span>Interactive Highway & Stop Navigator</span>
+          </h2>
+          <span class="text-xs text-slate-400">Click a mile marker to simulate location</span>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+          <button onclick="setMileMarker(2)" class="p-2.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-left transition flex flex-col space-y-1">
+            <span class="font-mono text-emerald-400 font-bold">MM 2: Twin Falls</span>
+            <span class="text-[11px] text-slate-400 truncate">Farm stand & snacks</span>
+          </button>
+
+          <button onclick="setMileMarker(16)" class="p-2.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-left transition flex flex-col space-y-1">
+            <span class="font-mono text-emerald-400 font-bold">MM 16: Ke'anae Peninsula</span>
+            <span class="text-[11px] text-slate-400 truncate">Fresh banana bread & shore fishing</span>
+          </button>
+
+          <button onclick="setMileMarker(32)" class="p-2.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-left transition flex flex-col space-y-1">
+            <span class="font-mono text-emerald-400 font-bold">MM 32: Wai'anapanapa</span>
+            <span class="text-[11px] text-slate-400 truncate">Black Sand Beach (Permit Required)</span>
+          </button>
+
+          <button onclick="setMileMarker(42)" class="p-2.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-left transition flex flex-col space-y-1">
+            <span class="font-mono text-emerald-400 font-bold">MM 42: Hana Town</span>
+            <span class="text-[11px] text-slate-400 truncate">Hana Bay & Local Artisans</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Category Filter Pill Bar -->
+      <div id="categoryFilterBar" class="flex flex-wrap items-center gap-2 pt-2">
+        <button onclick="setCategoryFilter('all')" id="catBtn-all" class="px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-600 text-white border border-emerald-500/50 shadow-sm transition">
+          All Products
+        </button>
+        <button onclick="setCategoryFilter('permits-safety')" id="catBtn-permits-safety" class="px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
+          Permits & Safety
+        </button>
+        <button onclick="setCategoryFilter('water-snorkel')" id="catBtn-water-snorkel" class="px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
+          Water & Snorkel
+        </button>
+        <button onclick="setCategoryFilter('fishing-tackle')" id="catBtn-fishing-tackle" class="px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
+          Shore Fishing
+        </button>
+        <button onclick="setCategoryFilter('food-produce')" id="catBtn-food-produce" class="px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
+          Local Produce & Food
+        </button>
+        <button onclick="setCategoryFilter('camping-outdoor')" id="catBtn-camping-outdoor" class="px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
+          Camping & Outdoor
+        </button>
+        <button onclick="setCategoryFilter('cultural-keepsakes')" id="catBtn-cultural-keepsakes" class="px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
+          Cultural Keepsakes
+        </button>
+      </div>
+
+      <div id="productsSection" class="space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+          <div>
+            <h2 id="catalogTitle" class="text-lg font-bold text-white">Dynamic Recommendations</h2>
+            <p id="catalogSubtitle" class="text-xs text-slate-400">Contextually filtered items powered by Shopify Metafields & Customer Context API</p>
+          </div>
+          <span id="productCountBadge" class="bg-slate-800 text-slate-300 text-xs px-2.5 py-1 rounded-full font-mono">6 items</span>
+        </div>
+
+        <!-- Product Cards Grid -->
+        <div id="productGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <!-- Dynamically Injected Products via JS -->
+        </div>
+      </div>
+
+      <div class="glass-panel rounded-2xl p-6 border border-slate-800 space-y-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-3">
+            <div class="p-2.5 rounded-xl bg-cyan-950 text-cyan-400 border border-cyan-800/50">
+              <i data-lucide="anchor" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <h3 class="text-base font-bold text-white">Local Shore Fishing & Eco-Tourism Guide</h3>
+              <p class="text-xs text-slate-400">Targeted gear, tide info, and sustainable Hawaiian fishing regulations</p>
+            </div>
+          </div>
+          <span class="text-xs font-mono text-cyan-400 bg-cyan-950/60 px-2.5 py-1 rounded-md border border-cyan-800">Shoreline & Kai</span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+          <div class="bg-slate-900/80 p-3 rounded-xl border border-slate-800 space-y-1">
+            <div class="font-semibold text-slate-200 flex items-center space-x-1.5">
+              <i data-lucide="waves" class="w-3.5 h-3.5 text-cyan-400"></i>
+              <span>Ke'anae Point Fishing</span>
+            </div>
+            <p class="text-slate-400">Target species: Ulua (Giant Trevally), Omilu. Use reef-safe lead-free sinkers and respect local family fishing spots.</p>
+          </div>
+
+          <div class="bg-slate-900/80 p-3 rounded-xl border border-slate-800 space-y-1">
+            <div class="font-semibold text-slate-200 flex items-center space-x-1.5">
+              <i data-lucide="sun" class="w-3.5 h-3.5 text-amber-400"></i>
+              <span>Reef-Safe Sun Protection</span>
+            </div>
+            <p class="text-slate-400">Maui law strictly bans non-mineral sunscreens containing Oxybenzone or Octinoxate to safeguard coral reefs.</p>
+          </div>
+
+          <div class="bg-slate-900/80 p-3 rounded-xl border border-slate-800 space-y-1">
+            <div class="font-semibold text-slate-200 flex items-center space-x-1.5">
+              <i data-lucide="calendar" class="w-3.5 h-3.5 text-emerald-400"></i>
+              <span>Park Permits</span>
+            </div>
+            <p class="text-slate-400">Wai'anapanapa State Park requires online reservations up to 30 days in advance for non-resident entrance & parking.</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Right Column: Interactive WASM AI Concierge & Engine Status (4 cols on lg) -->
+    <div class="lg:col-span-4 space-y-6">
+
+      <div class="glass-panel rounded-2xl border border-slate-800 p-5 space-y-4 shadow-xl">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+          <div class="flex items-center space-x-2.5">
+            <div class="w-8 h-8 rounded-lg bg-emerald-600/30 text-emerald-400 flex items-center justify-center border border-emerald-500/30">
+              <i data-lucide="bot" class="w-4 h-4"></i>
+            </div>
+            <div>
+              <h3 class="text-sm font-bold text-white">Aunty Hana Edge AI</h3>
+              <p id="slmModelStatus" class="text-[11px] text-slate-400">Browser WASM SLM Active</p>
+            </div>
+          </div>
+          <span id="slmStatusDot" class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" title="Online"></span>
+        </div>
+
+        <!-- Model Progress Container -->
+        <div id="slmProgressContainer" class="hidden space-y-1 bg-slate-950 p-2.5 rounded-xl border border-slate-800">
+          <div class="flex justify-between text-[11px] font-mono text-slate-300">
+            <span id="slmProgressText">Loading Hugging Face ONNX Model...</span>
+            <span id="slmPercentText" class="text-emerald-400 font-bold">0%</span>
+          </div>
+          <div class="w-full bg-slate-900 h-2 rounded-full overflow-hidden border border-slate-800">
+            <div id="slmProgressBar" class="bg-gradient-to-r from-emerald-500 to-teal-400 h-full w-0 transition-all duration-300"></div>
+          </div>
+        </div>
+
+        <p class="text-xs text-slate-300">
+          Ask questions about road conditions, motion sickness tips, fishing spots, or local Hawaiian protocols along the route.
+        </p>
+
+        <!-- Quick Query Buttons -->
+        <div class="flex flex-wrap gap-1.5 text-[11px]">
+          <button onclick="askAIQuick('What are the top safety tips for driving to Hana?')" class="px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
+            🚗 Safety Tips
+          </button>
+          <button onclick="askAIQuick('Where can I get banana bread near MM 16?')" class="px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
+            🍌 Banana Bread
+          </button>
+          <button onclick="askAIQuick('What are local fishing rules for Keanae shoreline?')" class="px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
+            🎣 Shore Fishing
+          </button>
+        </div>
+
+        <!-- Chat Output Container -->
+        <div id="chatOutput" class="bg-slate-950/80 rounded-xl p-3 border border-slate-800 text-xs min-h-[140px] max-h-[220px] overflow-y-auto space-y-3 font-sans">
+          <div class="text-slate-400 italic">
+            "Aloha! I'm here to help you navigate Hana safely and respectfully. Ask me anything!"
+          </div>
+        </div>
+
+        <!-- Latency & Mode Indicator -->
+        <div class="flex justify-between text-[10px] font-mono text-slate-500">
+          <span id="inferenceMode">Mode: Browser WASM SLM / Offline Engine</span>
+          <span id="latencyDisplay">Latency: --ms</span>
+        </div>
+
+        <!-- AI Input Form -->
+        <form onsubmit="handleAISubmit(event)" class="flex gap-2">
+          <input type="text" id="aiInput" placeholder="Ask Aunty Hana..." class="flex-1 bg-slate-900 border border-slate-700 rounded-lg text-xs px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500">
+          <button type="submit" id="aiSubmitBtn" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-2 rounded-lg text-xs font-semibold flex items-center justify-center transition">
+            <i data-lucide="send" class="w-3.5 h-3.5"></i>
+          </button>
+        </form>
+      </div>
+
+      <div class="glass-panel rounded-2xl border border-slate-800 p-5 space-y-3">
+        <div class="flex items-center justify-between">
+          <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center space-x-1.5">
+            <i data-lucide="activity" class="w-4 h-4 text-emerald-400"></i>
+            <span>Engine Context State</span>
+          </h3>
+          <span class="text-[10px] font-mono text-emerald-400">DYNAMIC SYNC</span>
+        </div>
+
+        <div id="engineStateDisplay" class="bg-slate-950 p-3 rounded-xl border border-slate-800 text-[11px] font-mono space-y-1 text-slate-300">
+          <div><span class="text-slate-500">customer.stage:</span> <span id="jsonStage" class="text-emerald-400">"prepare"</span></div>
+          <div><span class="text-slate-500">customer.persona:</span> <span id="jsonPersona" class="text-amber-400">"sightseer"</span></div>
+          <div><span class="text-slate-500">location.mile_marker:</span> <span id="jsonMM" class="text-cyan-400">0</span></div>
+          <div><span class="text-slate-500">cell_coverage:</span> <span id="jsonCell" class="text-emerald-400">"4G / High"</span></div>
+          <div><span class="text-slate-500">category_filter:</span> <span id="jsonCatFilter" class="text-teal-400">"all"</span></div>
+          <div><span class="text-slate-500">malama_pledge_accepted:</span> <span id="jsonPledge" class="text-purple-400">false</span></div>
+        </div>
+
+        <button onclick="toggleEngineModal()" class="w-full text-center py-2 rounded-lg bg-slate-800/90 hover:bg-slate-700 text-xs font-semibold text-slate-300 border border-slate-700 transition flex items-center justify-center space-x-1.5">
+          <i data-lucide="code" class="w-3.5 h-3.5 text-emerald-400"></i>
+          <span>Inspect Shopify Liquid & Rules Engine</span>
+        </button>
+      </div>
+
+      <!-- Eco Contribution & Malama Maui Box -->
+      <div class="bg-gradient-to-br from-emerald-950/60 to-slate-900 border border-emerald-900/50 rounded-2xl p-5 space-y-3">
+        <div class="flex items-center space-x-2">
+          <i data-lucide="sprout" class="w-5 h-5 text-emerald-400"></i>
+          <h4 class="text-xs font-bold text-white uppercase tracking-wider">Mālama Hana Pledge</h4>
+        </div>
+        <p class="text-xs text-slate-300">
+          1% of every order directly supports East Maui watershed protection and local Hana youth cultural programs.
+        </p>
+        <label class="flex items-center space-x-2 cursor-pointer text-xs text-slate-200">
+          <input type="checkbox" id="pledgeCheckbox" onchange="togglePledge(this.checked)" class="rounded border-slate-700 text-emerald-600 focus:ring-emerald-500 bg-slate-900">
+          <span>Add optional $2 Mālama ʻĀina donation to order</span>
+        </label>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- Cart Drawer Component -->
+  <div id="cartDrawer" class="fixed inset-0 z-50 overflow-hidden hidden">
+    <div class="absolute inset-0 bg-slate-950/70 backdrop-blur-sm" onclick="closeCart()"></div>
+
+    <div class="fixed inset-y-0 right-0 max-w-full flex pl-10">
+      <div class="w-screen max-w-md bg-slate-900 border-l border-slate-800 text-slate-100 flex flex-col shadow-2xl">
+
+        <!-- Cart Header -->
+        <div class="p-4 border-b border-slate-800 flex items-center justify-between">
+          <div class="flex items-center space-x-2">
+            <i data-lucide="shopping-bag" class="w-5 h-5 text-emerald-400"></i>
+            <h2 class="text-base font-bold text-white">Your Travel Cart</h2>
+          </div>
+          <button onclick="closeCart()" class="p-1 rounded-lg text-slate-400 hover:text-white">
+            <i data-lucide="x" class="w-5 h-5"></i>
+          </button>
+        </div>
+
+        <!-- Cart Items List -->
+        <div id="cartItemsContainer" class="flex-1 overflow-y-auto p-4 space-y-3">
+          <p class="text-xs text-slate-500 italic text-center py-8">Your cart is currently empty.</p>
+        </div>
+
+        <!-- Cart Footer -->
+        <div class="p-4 border-t border-slate-800 space-y-3 bg-slate-950">
+          <div class="flex justify-between text-xs text-slate-400">
+            <span>Subtotal</span>
+            <span id="cartSubtotal" class="font-mono text-white font-bold">$0.00</span>
+          </div>
+
+          <div id="cartPledgeRow" class="hidden flex justify-between text-xs text-emerald-400">
+            <span>Mālama ʻĀina Contribution</span>
+            <span class="font-mono font-bold">$2.00</span>
+          </div>
+
+          <div class="flex justify-between text-sm font-bold text-white border-t border-slate-800 pt-2">
+            <span>Total</span>
+            <span id="cartTotal" class="font-mono text-emerald-400">$0.00</span>
+          </div>
+
+          <button onclick="handleCheckout()" class="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-lg transition">
+            Proceed to Checkout
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Shopify Engine Rules & Metafield Inspector Modal -->
+  <div id="engineModal" class="fixed inset-0 z-50 overflow-y-auto hidden">
+    <div class="min-h-screen px-4 text-center flex items-center justify-center">
+      <div class="fixed inset-0 bg-slate-950/80 backdrop-blur-md" onclick="toggleEngineModal()"></div>
+
+      <div class="inline-block w-full max-w-4xl p-6 my-8 overflow-hidden text-left align-middle transition-all transform glass-panel rounded-2xl border border-slate-700 shadow-2xl relative z-10 text-slate-100">
+
+        <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+          <div class="flex items-center space-x-3">
+            <div class="p-2 rounded-xl bg-emerald-950 text-emerald-400 border border-emerald-800">
+              <i data-lucide="cpu" class="w-6 h-6"></i>
+            </div>
+            <div>
+              <h3 class="text-lg font-bold text-white">Shopify Back-Engine Rule Inspector</h3>
+              <p class="text-xs text-slate-400">Live Custom Metafield Evaluation & Dynamic Liquid/GraphQL Rules</p>
+            </div>
+          </div>
+          <button onclick="toggleEngineModal()" class="p-1 rounded-lg text-slate-400 hover:text-white">
+            <i data-lucide="x" class="w-5 h-5"></i>
+          </button>
+        </div>
+
+        <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-mono">
+
+          <!-- Liquid Template Rules Preview -->
+          <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
+            <div class="text-emerald-400 font-bold font-sans flex items-center space-x-2">
+              <i data-lucide="file-code" class="w-4 h-4"></i>
+              <span>Shopify Liquid Logic Evaluation</span>
+            </div>
+            <pre id="liquidRulesCode" class="text-[11px] text-slate-300 overflow-x-auto whitespace-pre-wrap leading-relaxed bg-slate-900/90 p-3 rounded-lg border border-slate-800">
+{% comment %} Hana Dynamic Engine Liquid {% endcomment %}
+{% assign stage = customer.metafields.hana.travel_stage %}
+{% assign mm = visitor.location.mile_marker %}
+
+{% if stage == 'prepare' %}
+  {% render 'collection-prep-essentials' %}
+{% elsif stage == 'travel' %}
+  {% if mm >= 15 and mm <= 18 %}
+    {% render 'keanae-impulse-snacks' %}
+  {% elsif mm >= 30 and mm <= 35 %}
+    {% render 'waianapanapa-black-sand-permit-banner' %}
+  {% endif %}
+{% elsif stage == 'remember' %}
+  {% render 'post-trip-artisan-souvenirs' %}
+{% endif %}
+            </pre>
+          </div>
+
+          <!-- Dynamic GraphQL Payload -->
+          <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
+            <div class="text-cyan-400 font-bold font-sans flex items-center space-x-2">
+              <i data-lucide="database" class="w-4 h-4"></i>
+              <span>Customer Context API Metafield Payload</span>
+            </div>
+            <pre id="graphqlPayload" class="text-[11px] text-slate-300 overflow-x-auto whitespace-pre-wrap leading-relaxed bg-slate-900/90 p-3 rounded-lg border border-slate-800">
+{
+  "customerContext": {
+    "travelStage": "prepare",
+    "persona": "sightseer",
+    "mileMarker": 0,
+    "cellSignal": "high",
+    "offlineGuideDownloaded": false,
+    "malamaPledgeAccepted": false
+  },
+  "appliedFunctions": [
+    "hana_dynamic_upsell_v2",
+    "eco_donation_rule_v1"
+  ]
+}
+            </pre>
+          </div>
+
+        </div>
+
+        <div class="mt-6 border-t border-slate-800 pt-4 flex justify-between items-center text-xs text-slate-400">
+          <span>Engine Status: <strong class="text-emerald-400">OPERATIONAL (0ms latency)</strong></span>
+          <button onclick="toggleEngineModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg font-semibold transition">
+            Close Rules Inspector
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    /* ==========================================================================
+       HĀNA RUNNER EDGE AI ENGINE & EXTENDED PRODUCT CATALOG
+       ========================================================================== */
+
+    import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2';
+
+    // Disable local model checking for browser CDN WASM execution
+    env.allowLocalModels = false;
+
+    // Application Context State
+    window.engineState = {
+      stage: 'prepare',       // 'prepare' | 'travel' | 'remember'
+      persona: 'sightseer',    // 'sightseer' | 'angler' | 'cultural' | 'adventure'
+      categoryFilter: 'all',  // 'all' | 'permits-safety' | 'water-snorkel' | 'fishing-tackle' | 'food-produce' | 'camping-outdoor' | 'cultural-keepsakes'
+      mileMarker: 0,
+      cellSignal: '4G / High',
+      malamaPledge: false,
+      cart: []
+    };
+
+    let slmPipeline = null;
+    let slmLoading = false;
+
+    // Extended 7-Category Product Database with Stage, Mile Marker & Persona tags
+    const productCatalog = [
+      // PREPARE STAGE - PERMITS & SAFETY
+      {
+        id: 'p1',
+        title: 'Hana Ginger Relief & Motion Sickness Kit',
+        price: 18.00,
+        stage: 'prepare',
+        category: 'permits-safety',
+        personas: ['sightseer', 'cultural', 'adventure', 'angler'],
+        image: 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?auto=format&fit=crop&w=600&q=80',
+        badge: 'Top Safety Item',
+        description: 'Organic Hawaiian ginger chews, pressure-point wristbands, and motion sickness patches for 62 winding curves.',
+        mmMin: 0, mmMax: 45
+      },
+      {
+        id: 'p2',
+        title: 'Waiʻānapanapa Black Sand Beach Park Entry Permit',
+        price: 15.00,
+        stage: 'prepare',
+        category: 'permits-safety',
+        personas: ['sightseer', 'cultural', 'adventure', 'angler'],
+        image: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=600&q=80',
+        badge: 'Official State Voucher',
+        description: 'Required advance voucher for vehicle parking and entry to the famous Black Sand Beach at MM 32.',
+        mmMin: 0, mmMax: 35
+      },
+      {
+        id: 'p3',
+        title: 'Offline Audio GPS Road Guide & Map App',
+        price: 12.99,
+        stage: 'prepare',
+        category: 'permits-safety',
+        personas: ['sightseer', 'adventure', 'cultural'],
+        image: 'https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1?auto=format&fit=crop&w=600&q=80',
+        badge: 'Offline Cell Ready',
+        description: 'Voice-guided narration triggerable by offline GPS covering Hawaiian legends, waterfall turnouts, and bridge safety.',
+        mmMin: 0, mmMax: 45
+      },
+      {
+        id: 'p4',
+        title: 'Emergency Roadside & First Aid Trail Pack',
+        price: 29.50,
+        stage: 'prepare',
+        category: 'permits-safety',
+        personas: ['adventure', 'sightseer', 'angler'],
+        image: 'https://images.unsplash.com/photo-1603398938378-e54eab446dde?auto=format&fit=crop&w=600&q=80',
+        badge: 'Essential Safety',
+        description: 'Waterproof medical kit, thermal blanket, tourniquet, and multi-tool survival gear for remote East Maui trails.',
+        mmMin: 0, mmMax: 45
+      },
+
+      // PREPARE STAGE - WATER & SNORKEL
+      {
+        id: 'p5',
+        title: 'Reef-Safe Mineral Sunscreen (SPF 50)',
+        price: 22.00,
+        stage: 'prepare',
+        category: 'water-snorkel',
+        personas: ['sightseer', 'angler', 'adventure', 'cultural'],
+        image: 'https://images.unsplash.com/photo-1598440947619-2c35fc9aa908?auto=format&fit=crop&w=600&q=80',
+        badge: 'Maui Eco Law Compliant',
+        description: '100% Non-nano zinc oxide reef sunscreen protects Hana delicate ocean eco-system.',
+        mmMin: 0, mmMax: 45
+      },
+      {
+        id: 'p6',
+        title: 'Anti-Fog Dry Top Snorkel & Mask Combo',
+        price: 36.00,
+        stage: 'prepare',
+        category: 'water-snorkel',
+        personas: ['sightseer', 'adventure', 'angler'],
+        image: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=600&q=80',
+        badge: 'Crystal Clear Optics',
+        description: 'Tempered glass mask with dry-top snorkel valve perfect for Hana Bay and Waiʻānapanapa tidal pools.',
+        mmMin: 0, mmMax: 45
+      },
+
+      // TRAVEL STAGE - FOOD & PRODUCE
+      {
+        id: 'p7',
+        title: 'Keʻanae Fresh Warm Banana Bread & Coconut Ice',
+        price: 12.50,
+        stage: 'travel',
+        category: 'food-produce',
+        personas: ['sightseer', 'cultural', 'adventure', 'angler'],
+        image: 'https://images.unsplash.com/photo-1603532648955-039310d9ed75?auto=format&fit=crop&w=600&q=80',
+        badge: 'Pick Up at MM 16',
+        description: 'Famous Aunty Sandy Keʻanae Peninsula fresh banana bread order reservation.',
+        mmMin: 12, mmMax: 20
+      },
+      {
+        id: 'p8',
+        title: 'Fresh Lilikoi & Organic Maui Passionfruit Preserves',
+        price: 14.00,
+        stage: 'travel',
+        category: 'food-produce',
+        personas: ['sightseer', 'cultural'],
+        image: 'https://images.unsplash.com/photo-1589135233689-d58b3012e94b?auto=format&fit=crop&w=600&q=80',
+        badge: 'Twin Falls MM 2',
+        description: 'Artisanal local fruit jam made from East Maui family orchards.',
+        mmMin: 2, mmMax: 15
+      },
+      {
+        id: 'p9',
+        title: 'Hana Town Chilled Local Cold Brew Coffee',
+        price: 7.50,
+        stage: 'travel',
+        category: 'food-produce',
+        personas: ['sightseer', 'cultural', 'adventure', 'angler'],
+        image: 'https://images.unsplash.com/photo-1517701604599-bb29b565090c?auto=format&fit=crop&w=600&q=80',
+        badge: 'MM 42 Refreshment',
+        description: '100% East Maui grown shade coffee brewed for refreshing energy after driving.',
+        mmMin: 35, mmMax: 45
+      },
+
+      // TRAVEL STAGE - FISHING & TACKLE
+      {
+        id: 'p10',
+        title: 'Shore Caster Ulua & Omilu Reef Fishing Rig',
+        price: 45.00,
+        stage: 'travel',
+        category: 'fishing-tackle',
+        personas: ['angler'],
+        image: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=600&q=80',
+        badge: 'Angler Specific',
+        description: 'Lead-free bio-degradable sinkers, circle hooks, and braided line set for East Maui rocky shorelines.',
+        mmMin: 10, mmMax: 45
+      },
+
+      // TRAVEL STAGE - CAMPING & OUTDOOR
+      {
+        id: 'p11',
+        title: 'Heavy Duty Felt-Sole Stream & Waterfall Booties',
+        price: 38.00,
+        stage: 'travel',
+        category: 'camping-outdoor',
+        personas: ['adventure', 'sightseer'],
+        image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=600&q=80',
+        badge: 'Anti-Slip Grip',
+        description: 'Essential footwear for wet rock crossings at Twin Falls (MM 2) and Bamboo Forest trails.',
+        mmMin: 2, mmMax: 40
+      },
+      {
+        id: 'p12',
+        title: 'Ultra-Lightweight Rain Poncho & Dry Bag Set',
+        price: 24.00,
+        stage: 'travel',
+        category: 'camping-outdoor',
+        personas: ['adventure', 'sightseer', 'cultural'],
+        image: 'https://images.unsplash.com/photo-1510018572596-e40e2619b412?auto=format&fit=crop&w=600&q=80',
+        badge: 'Rainforest Ready',
+        description: 'Breathable waterproof poncho and 10L dry sack to protect electronics during tropical showers.',
+        mmMin: 0, mmMax: 45
+      },
+
+      // REMEMBER STAGE - CULTURAL KEEPSAKES
+      {
+        id: 'p13',
+        title: 'Hand-Carved Maui Koa Wood Hana Keepsake Box',
+        price: 85.00,
+        stage: 'remember',
+        category: 'cultural-keepsakes',
+        personas: ['cultural', 'sightseer'],
+        image: 'https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=600&q=80',
+        badge: 'Locally Crafted',
+        description: 'Engraved with coordinates of East Maui coast line, made from fallen local Koa timber.',
+        mmMin: 0, mmMax: 45
+      },
+      {
+        id: 'p14',
+        title: 'Custom Photo Book: "My Journey on the Road to Hana"',
+        price: 49.00,
+        stage: 'remember',
+        category: 'cultural-keepsakes',
+        personas: ['sightseer', 'adventure', 'cultural', 'angler'],
+        image: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=600&q=80',
+        badge: 'Custom Memories',
+        description: 'Hardcover souvenir album with personalized route maps and your uploaded road photos.',
+        mmMin: 0, mmMax: 45
+      },
+      {
+        id: 'p15',
+        title: 'Hana Organic Macadamia & Hot Sauce Gift Box',
+        price: 34.00,
+        stage: 'remember',
+        category: 'cultural-keepsakes',
+        personas: ['cultural', 'sightseer', 'angler'],
+        image: 'https://images.unsplash.com/photo-1596040033229-a9821ebd058d?auto=format&fit=crop&w=600&q=80',
+        badge: 'Artisanal Flavor',
+        description: 'Small batch Hawaiian chili pepper water, roasted mac nuts, and Hana fruit preserves shipped to your home.',
+        mmMin: 0, mmMax: 45
+      },
+      {
+        id: 'p16',
+        title: 'Native Hawaiian Seed Growing Kit (Koa & Taro)',
+        price: 19.50,
+        stage: 'remember',
+        category: 'cultural-keepsakes',
+        personas: ['cultural', 'sightseer'],
+        image: 'https://images.unsplash.com/photo-1530836369250-ef72a3f5cda8?auto=format&fit=crop&w=600&q=80',
+        badge: 'Mālama ʻĀina',
+        description: 'Eco-certified native seeds with biodegradable planting pots to grow Hawaiian flora at home.',
+        mmMin: 0, mmMax: 45
+      }
+    ];
+
+    // Initialize application on load
+    window.onload = function() {
+      if (window.lucide) {
+        lucide.createIcons();
+      }
+      setTravelStage('prepare');
+      initSLM();
+    };
+
+    // Stage Selector Handler
+    window.setTravelStage = function(stage) {
+      engineState.stage = stage;
+
+      // Update UI Stage Buttons
+      ['prepare', 'travel', 'remember'].forEach(s => {
+        const btn = document.getElementById(`stageBtn-${s}`);
+        if (s === stage) {
+          btn.className = "flex items-center space-x-2 px-3 sm:px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-200 bg-emerald-600 text-white shadow-md active-stage-glow";
+        } else {
+          btn.className = "flex items-center space-x-2 px-3 sm:px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-200 text-slate-400 hover:text-white hover:bg-slate-800/60";
+        }
+      });
+
+      // Show/Hide Mile Marker Slider & Interactive Map based on Stage
+      const mmContainer = document.getElementById('mileMarkerContainer');
+      const interactiveMap = document.getElementById('interactiveMapSection');
+      if (stage === 'travel') {
+        mmContainer.classList.remove('hidden');
+        interactiveMap.classList.remove('hidden');
+      } else {
+        mmContainer.classList.add('hidden');
+        interactiveMap.classList.add('hidden');
+      }
+
+      updateHeroAndAlerts();
+      renderCatalog();
+      updateEngineDiagnostics();
+    };
+
+    // Persona Selector Handler
+    window.updateVisitorPersona = function(persona) {
+      engineState.persona = persona;
+      renderCatalog();
+      updateEngineDiagnostics();
+    };
+
+    // Category Filter Handler
+    window.setCategoryFilter = function(cat) {
+      engineState.categoryFilter = cat;
+      const categories = ['all', 'permits-safety', 'water-snorkel', 'fishing-tackle', 'food-produce', 'camping-outdoor', 'cultural-keepsakes'];
+      categories.forEach(c => {
+        const btn = document.getElementById(`catBtn-${c}`);
+        if (btn) {
+          if (c === cat) {
+            btn.className = "px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-600 text-white border border-emerald-500/50 shadow-sm transition";
+          } else {
+            btn.className = "px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition";
+          }
+        }
+      });
+      renderCatalog();
+      updateEngineDiagnostics();
+    };
+
+    // Mile Marker Change Handler
+    window.onMileMarkerChange = function(val) {
+      engineState.mileMarker = parseInt(val, 10);
+      document.getElementById('mileMarkerLabel').textContent = `MM ${val}`;
+
+      // Calculate cell signal status based on MM
+      if (engineState.mileMarker >= 12 && engineState.mileMarker <= 38) {
+        engineState.cellSignal = 'NO SIGNAL / Offline Cache Active';
+      } else if (engineState.mileMarker > 38) {
+        engineState.cellSignal = '3G / Hana Town Cell Tower';
+      } else {
+        engineState.cellSignal = '4G / High';
+      }
+
+      updateHeroAndAlerts();
+      renderCatalog();
+      updateEngineDiagnostics();
+    };
+
+    // Direct Mile Marker Click Handler
+    window.setMileMarker = function(mm) {
+      document.getElementById('mileSlider').value = mm;
+      onMileMarkerChange(mm);
+    };
+
+    function updateHeroAndAlerts() {
+      const heroBadge = document.getElementById('heroBadge');
+      const heroLocationTag = document.getElementById('heroLocationTag');
+      const heroTitle = document.getElementById('heroTitle');
+      const heroDescription = document.getElementById('heroDescription');
+      const alertTitle = document.getElementById('alertTitle');
+      const alertBody = document.getElementById('alertBody');
+      const activeContextText = document.getElementById('activeContextText');
+      const heroBg = document.getElementById('heroBgImage');
+
+      if (engineState.stage === 'prepare') {
+        heroBadge.textContent = 'Stage 1: Pre-Departure Prep';
+        heroBadge.className = 'px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/30';
+        heroLocationTag.textContent = 'Location: Kahului / Departure Hub';
+        heroTitle.textContent = 'Prepare for the Road to Hana';
+        heroDescription.textContent = 'Stock up on motion sickness remedies, reserve required state park entry permits, hire gear, and load offline audio guides before leaving cell coverage.';
+        heroBg.style.backgroundImage = "url('https://images.unsplash.com/photo-1542259009477-d625272157b7?auto=format&fit=crop&w=1200&q=80')";
+
+        alertTitle.textContent = 'Pre-Drive Checklist & Vehicle Safety';
+        alertBody.textContent = 'Ensure your rental vehicle has a full gas tank in Kahului (no gas until Hana Town MM 42!). Download offline maps as cell coverage drops completely at MM 12.';
+
+        activeContextText.textContent = `Stage: Preparing | Target: Kahului Departure | Local Weather: 82°F Sunshine`;
+
+      } else if (engineState.stage === 'travel') {
+        heroBadge.textContent = `Stage 2: On The Road (MM ${engineState.mileMarker})`;
+        heroBadge.className = 'px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-cyan-500/20 text-cyan-300 border border-cyan-500/30';
+        heroLocationTag.textContent = `Signal: ${engineState.cellSignal}`;
+
+        if (engineState.mileMarker <= 12) {
+          heroTitle.textContent = 'Entering the Winding North Shore';
+          heroDescription.textContent = 'Twin Falls and bamboo forests ahead. Drive slowly, allow local drivers to pass, and stay hydrated.';
+        } else if (engineState.mileMarker <= 30) {
+          heroTitle.textContent = 'Passing Keʻanae Peninsula & Waterfalls';
+          heroDescription.textContent = 'Famous stopping point for hot banana bread, rugged lava rock ocean views, and traditional taro fields.';
+        } else if (engineState.mileMarker <= 38) {
+          heroTitle.textContent = 'Approaching Waiʻānapanapa State Park';
+          heroDescription.textContent = 'Black sand beaches, lava caves, and coastal blowholes. Have your digital permit QR code ready.';
+        } else {
+          heroTitle.textContent = 'Welcome to Historic Hāna Town';
+          heroDescription.textContent = 'You made it! Explore Hana Bay, local food trucks, cultural gift shops, and serene shoreline fishing.';
+        }
+
+        heroBg.style.backgroundImage = "url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80')";
+
+        alertTitle.textContent = `Driving Etiquette at MM ${engineState.mileMarker}`;
+        alertBody.textContent = 'One-lane bridges give right-of-way to oncoming traffic. Honk gently at blind narrow curves, NEVER park on private driveways, and wave with a shaka to polite drivers!';
+
+        activeContextText.textContent = `Stage: On The Road | Mile Marker: MM ${engineState.mileMarker} | Signal: ${engineState.cellSignal}`;
+
+      } else if (engineState.stage === 'remember') {
+        heroBadge.textContent = 'Stage 3: Post-Trip Memory & Legacy';
+        heroBadge.className = 'px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-purple-500/20 text-purple-300 border border-purple-500/30';
+        heroLocationTag.textContent = 'Location: Post-Trip / Home Delivery';
+        heroTitle.textContent = 'Remember Hana & Support Maui Artisans';
+        heroDescription.textContent = 'Bring East Maui home with hand-engraved Koa keepsakes, custom photobooks, artisanal macadamia treats, and watershed conservation subscriptions.';
+        heroBg.style.backgroundImage = "url('https://images.unsplash.com/photo-1505881513153-050580076419?auto=format&fit=crop&w=1200&q=80')";
+
+        alertTitle.textContent = 'Mahalo Nui Loa for Visiting Responsibly!';
+        alertBody.textContent = 'Your visit helped support local Hawaiian family farms and conservation. Re-order your favorite Hana coffee or gift artisanal boxes straight to your doorstep.';
+
+        activeContextText.textContent = `Stage: Remembering | Home Delivery Enabled | Watershed Conservation Partner`;
+      }
+    }
+
+    function renderCatalog() {
+      const grid = document.getElementById('productGrid');
+      grid.innerHTML = '';
+
+      // Dynamic Filtering Engine Logic
+      const filtered = productCatalog.filter(item => {
+        // Match Stage
+        if (item.stage !== engineState.stage) return false;
+
+        // Match Category Filter
+        if (engineState.categoryFilter !== 'all' && item.category !== engineState.categoryFilter) {
+          return false;
+        }
+
+        // Match Persona Tag
+        if (item.personas && !item.personas.includes(engineState.persona)) {
+          if (engineState.persona === 'angler' && !item.personas.includes('angler')) return false;
+        }
+
+        // Match Mile Marker Range if in travel mode
+        if (engineState.stage === 'travel') {
+          if (engineState.mileMarker < item.mmMin || engineState.mileMarker > item.mmMax) {
+            return false;
+          }
+        }
+
+        return true;
+      });
+
+      document.getElementById('productCountBadge').textContent = `${filtered.length} recommendation${filtered.length === 1 ? '' : 's'}`;
+
+      if (filtered.length === 0) {
+        grid.innerHTML = `
+          <div class="col-span-full bg-slate-900/60 p-8 rounded-2xl border border-slate-800 text-center space-y-2">
+            <i data-lucide="compass" class="w-8 h-8 text-slate-500 mx-auto"></i>
+            <p class="text-sm font-semibold text-slate-300">No specific items for this exact context or filter</p>
+            <p class="text-xs text-slate-500">Try adjusting the Mile Marker slider above, switching category filter, or changing visitor persona.</p>
+          </div>
+        `;
+        if (window.lucide) lucide.createIcons();
+        return;
+      }
+
+      filtered.forEach(item => {
+        const card = document.createElement('div');
+        card.className = "bg-slate-900/90 rounded-xl overflow-hidden border border-slate-800 hover:border-slate-700 transition-all duration-300 flex flex-col group shadow-lg";
+
+        card.innerHTML = `
+          <div class="relative h-40 overflow-hidden bg-slate-950">
+            <img src="${item.image}" alt="${item.title}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90">
+            <span class="absolute top-2 left-2 bg-slate-950/80 backdrop-blur-md text-emerald-400 border border-emerald-800/60 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+              ${item.badge}
+            </span>
+            <span class="absolute bottom-2 right-2 bg-slate-950/90 text-white font-mono font-bold text-xs px-2 py-1 rounded-md">
+              $${item.price.toFixed(2)}
+            </span>
+          </div>
+
+          <div class="p-4 flex-1 flex flex-col justify-between space-y-3">
+            <div>
+              <h3 class="text-sm font-bold text-white leading-snug group-hover:text-emerald-300 transition-colors">${item.title}</h3>
+              <p class="text-xs text-slate-400 mt-1 line-clamp-2">${item.description}</p>
+            </div>
+
+            <button onclick="addToCart('${item.id}')" class="w-full py-2 px-3 rounded-lg bg-emerald-600/90 hover:bg-emerald-500 text-white font-semibold text-xs flex items-center justify-center space-x-1.5 transition shadow-md">
+              <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+              <span>Add to Travel Pack</span>
+            </button>
+          </div>
+        `;
+
+        grid.appendChild(card);
+      });
+
+      if (window.lucide) lucide.createIcons();
+    }
+
+    window.addToCart = function(productId) {
+      const item = productCatalog.find(p => p.id === productId);
+      if (!item) return;
+
+      const existing = engineState.cart.find(c => c.id === productId);
+      if (existing) {
+        existing.qty += 1;
+      } else {
+        engineState.cart.push({ ...item, qty: 1 });
+      }
+
+      updateCartUI();
+      openCart();
+    };
+
+    function updateCartUI() {
+      const container = document.getElementById('cartItemsContainer');
+      const badge = document.getElementById('cartBadge');
+      const subtotalEl = document.getElementById('cartSubtotal');
+      const totalEl = document.getElementById('cartTotal');
+
+      const totalItems = engineState.cart.reduce((sum, i) => sum + i.qty, 0);
+      badge.textContent = totalItems;
+
+      if (engineState.cart.length === 0) {
+        container.innerHTML = `<p class="text-xs text-slate-500 italic text-center py-8">Your cart is currently empty.</p>`;
+        subtotalEl.textContent = '$0.00';
+        totalEl.textContent = engineState.malamaPledge ? '$2.00' : '$0.00';
+        return;
+      }
+
+      container.innerHTML = '';
+      let subtotal = 0;
+
+      engineState.cart.forEach(item => {
+        subtotal += item.price * item.qty;
+        const div = document.createElement('div');
+        div.className = 'flex items-center justify-between bg-slate-950 p-3 rounded-xl border border-slate-800 text-xs';
+        div.innerHTML = `
+          <div class="flex items-center space-x-3">
+            <img src="${item.image}" class="w-10 h-10 rounded-lg object-cover">
+            <div>
+              <p class="font-bold text-white line-clamp-1">${item.title}</p>
+              <p class="text-slate-400 font-mono">$${item.price.toFixed(2)} x ${item.qty}</p>
+            </div>
+          </div>
+          <button onclick="removeFromCart('${item.id}')" class="text-slate-500 hover:text-red-400 p-1">
+            <i data-lucide="trash-2" class="w-4 h-4"></i>
+          </button>
+        `;
+        container.appendChild(div);
+      });
+
+      subtotalEl.textContent = `$${subtotal.toFixed(2)}`;
+      const grandTotal = subtotal + (engineState.malamaPledge ? 2.0 : 0.0);
+      totalEl.textContent = `$${grandTotal.toFixed(2)}`;
+
+      if (window.lucide) lucide.createIcons();
+    }
+
+    window.removeFromCart = function(id) {
+      engineState.cart = engineState.cart.filter(i => i.id !== id);
+      updateCartUI();
+    };
+
+    window.togglePledge = function(checked) {
+      engineState.malamaPledge = checked;
+      document.getElementById('cartPledgeRow').classList.toggle('hidden', !checked);
+      updateCartUI();
+      updateEngineDiagnostics();
+    };
+
+    window.openCart = function() {
+      document.getElementById('cartDrawer').classList.remove('hidden');
+    };
+
+    window.closeCart = function() {
+      document.getElementById('cartDrawer').classList.add('hidden');
+    };
+
+    window.handleCheckout = function() {
+      if (engineState.cart.length === 0) {
+        alert('Please add items to your travel pack before checking out.');
+        return;
+      }
+      alert('🌺 Mahalo! Order processed in Shopify Engine Simulator. Check output rules in the Inspector!');
+      engineState.cart = [];
+      updateCartUI();
+      closeCart();
+    };
+
+    function updateEngineDiagnostics() {
+      document.getElementById('jsonStage').textContent = `"${engineState.stage}"`;
+      document.getElementById('jsonPersona').textContent = `"${engineState.persona}"`;
+      document.getElementById('jsonMM').textContent = engineState.mileMarker;
+      document.getElementById('jsonCell').textContent = `"${engineState.cellSignal}"`;
+      document.getElementById('jsonCatFilter').textContent = `"${engineState.categoryFilter}"`;
+      document.getElementById('jsonPledge').textContent = engineState.malamaPledge;
+
+      // Dynamic Liquid preview generator
+      const liquidText = `{% comment %} Shopify Dynamic Engine: Hana Rules Context {% endcomment %}
+{% assign stage = "${engineState.stage}" %}
+{% assign persona = "${engineState.persona}" %}
+{% assign category = "${engineState.categoryFilter}" %}
+{% assign mm = ${engineState.mileMarker} %}
+
+{% if stage == 'prepare' %}
+  {% render 'motion-sickness-bundle' %}
+  {% render 'state-park-permit-checkout' %}
+{% elsif stage == 'travel' and mm == ${engineState.mileMarker} %}
+  {% render 'location-push-recommendation', mile_marker: ${engineState.mileMarker} %}
+{% elsif stage == 'remember' %}
+  {% render 'artisan-reorder-payouts' %}
+{% endif %}`;
+
+      document.getElementById('liquidRulesCode').textContent = liquidText;
+
+      // Dynamic GraphQL payload
+      const graphqlObj = {
+        customerContext: {
+          travelStage: engineState.stage,
+          persona: engineState.persona,
+          categoryFilter: engineState.categoryFilter,
+          mileMarker: engineState.mileMarker,
+          cellSignal: engineState.cellSignal,
+          malamaPledgeAccepted: engineState.malamaPledge
+        },
+        activeRuleHooks: [
+          "hana_stage_router_v2",
+          "reef_safe_compliance_checker",
+          "local_merchant_payout_splitter"
+        ]
+      };
+      document.getElementById('graphqlPayload').textContent = JSON.stringify(graphqlObj, null, 2);
+    }
+
+    window.toggleEngineModal = function() {
+      const modal = document.getElementById('engineModal');
+      modal.classList.toggle('hidden');
+    };
+
+    window.scrollToProducts = function() {
+      document.getElementById('productsSection').scrollIntoView({ behavior: 'smooth' });
+    };
+
+    window.showProtocolModal = function() {
+      alert("🌺 Mālama Hana Protocols:\n\n1. Yield to local drivers on all 59 bridges.\n2. Leave no trace - pack out all litter.\n3. Stay on marked trails; avoid private property.\n4. Only use reef-safe mineral sunscreens.");
+    };
+
+    // Initialize Hugging Face Client-Side SLM
+    async function initSLM() {
+      const progressContainer = document.getElementById('slmProgressContainer');
+      const progressBar = document.getElementById('slmProgressBar');
+      const progressText = document.getElementById('slmProgressText');
+      const percentText = document.getElementById('slmPercentText');
+      const statusText = document.getElementById('slmModelStatus');
+      const statusDot = document.getElementById('slmStatusDot');
+
+      try {
+        progressContainer.classList.remove('hidden');
+        statusText.textContent = 'Loading Hugging Face WASM...';
+        slmLoading = true;
+
+        slmPipeline = await pipeline('text-generation', 'Xenova/LaMini-Flan-T5-77M', {
+          progress_callback: (p) => {
+            if (p.status === 'progress') {
+              const pct = Math.round(p.progress || 0);
+              progressBar.style.width = `${pct}%`;
+              percentText.textContent = `${pct}%`;
+              progressText.textContent = `Downloading ${p.file}...`;
+            }
+          }
+        });
+
+        statusText.textContent = 'Browser WASM SLM Active';
+        statusDot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse';
+        progressContainer.classList.add('hidden');
+        document.getElementById('inferenceMode').textContent = 'Mode: Hugging Face WASM SLM (Client-Side)';
+        slmLoading = false;
+      } catch (err) {
+        console.warn('WASM model load fallback active:', err);
+        statusText.textContent = 'Offline Fallback Engine Active';
+        statusDot.className = 'w-2.5 h-2.5 rounded-full bg-amber-400';
+        progressContainer.classList.add('hidden');
+        document.getElementById('inferenceMode').textContent = 'Mode: Rule-Based Fallback Engine';
+        slmLoading = false;
+      }
+    }
+
+    window.handleAISubmit = async function(e) {
+      e.preventDefault();
+      const input = document.getElementById('aiInput');
+      const query = input.value.trim();
+      if (!query) return;
+
+      input.value = '';
+      await askAI(query);
+    };
+
+    window.askAIQuick = async function(text) {
+      await askAI(text);
+    };
+
+    async function askAI(userQuery) {
+      const chatOutput = document.getElementById('chatOutput');
+      const submitBtn = document.getElementById('aiSubmitBtn');
+
+      // Append user message
+      const userDiv = document.createElement('div');
+      userDiv.className = 'text-emerald-300 font-semibold bg-emerald-950/40 p-2 rounded-lg border border-emerald-900/50';
+      userDiv.textContent = `You: ${userQuery}`;
+      chatOutput.appendChild(userDiv);
+      chatOutput.scrollTop = chatOutput.scrollHeight;
+
+      // Loading indicator
+      const loadingDiv = document.createElement('div');
+      loadingDiv.className = 'text-slate-400 italic flex items-center space-x-1.5';
+      loadingDiv.innerHTML = `<i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin text-emerald-400"></i><span>Aunty Hana is typing...</span>`;
+      chatOutput.appendChild(loadingDiv);
+      chatOutput.scrollTop = chatOutput.scrollHeight;
+      if (window.lucide) lucide.createIcons();
+
+      submitBtn.disabled = true;
+      const startTime = performance.now();
+
+      try {
+        let aiText = "";
+
+        if (slmPipeline) {
+          const prompt = `Context: Stage=${engineState.stage}, MileMarker=${engineState.mileMarker}, Persona=${engineState.persona}. Question: ${userQuery}`;
+          const res = await slmPipeline(prompt, { max_new_tokens: 60, temperature: 0.7 });
+          if (res && res[0] && res[0].generated_text) {
+            aiText = res[0].generated_text;
+          }
+        }
+
+        if (!aiText) {
+          aiText = getStaticFallbackResponse(userQuery);
+        }
+
+        const endTime = performance.now();
+        const latency = Math.round(endTime - startTime);
+        document.getElementById('latencyDisplay').textContent = `Latency: ${latency}ms`;
+
+        chatOutput.removeChild(loadingDiv);
+
+        const replyDiv = document.createElement('div');
+        replyDiv.className = 'text-slate-200 bg-slate-900 p-2.5 rounded-lg border border-slate-800 space-y-1';
+        replyDiv.innerHTML = `<span class="text-amber-400 font-bold text-[11px] block">Aunty Hana 🌺</span><span>${aiText}</span>`;
+        chatOutput.appendChild(replyDiv);
+
+      } catch (err) {
+        chatOutput.removeChild(loadingDiv);
+        const errDiv = document.createElement('div');
+        errDiv.className = 'text-slate-300 bg-slate-900 p-2 rounded-lg border border-slate-800';
+        errDiv.innerHTML = `<span class="text-amber-400 font-bold block">Aunty Hana 🌺</span><span>${getStaticFallbackResponse(userQuery)}</span>`;
+        chatOutput.appendChild(errDiv);
+      } finally {
+        submitBtn.disabled = false;
+        chatOutput.scrollTop = chatOutput.scrollHeight;
+      }
+    }
+
+    function getStaticFallbackResponse(query) {
+      const q = query.toLowerCase();
+      if (q.includes('safety') || q.includes('driving') || q.includes('drive')) {
+        return "Aloha! Drive slow on the 62 winding curves, always yield to local drivers on all 59 single-lane bridges, and never block emergency turnouts.";
+      }
+      if (q.includes('banana') || q.includes('food') || q.includes('eat')) {
+        return "Around Mile Marker 16 on the Ke'anae Peninsula, make sure to stop by Aunty Sandy's for hot, fresh banana bread!";
+      }
+      if (q.includes('fishing') || q.includes('shore') || q.includes('fish')) {
+        return "Ke'anae Point is renowned for shore fishing (Ulua and Omilu). Use lead-free sinkers to preserve Maui coral reefs!";
+      }
+      return `Aloha! When traveling through MM ${engineState.mileMarker} in stage "${engineState.stage}", remember to practice Mālama ʻĀina and drive with care.`;
+    }
+
+    // Register Service Worker for offline capability
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js')
+        .then(() => console.log('Hāna Runner Service Worker Registered'))
+        .catch(err => console.log('Service Worker registration skipped or failed:', err));
+    }
+  </script>
+
+</body>
+</html>
