@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hana Runner | Beta Launchpad Hub</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#090d16">
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Transformers.js (Quantized WASM Models) -->
+  <script type="module">
+    import { pipeline } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.6.0';
+    window.TransformersPipeline = pipeline;
+  </script>
+
+  <style>
+    html { font-size: 14px; }
+    @media (min-width: 768px) { html { font-size: 16px; } }
+    body { background: #090d16; color: #f3f4f6; font-family: system-ui, -apple-system, sans-serif; }
+
+    .glass-panel {
+      background: rgba(17, 24, 39, 0.7);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .glass-card {
+      background: rgba(31, 41, 55, 0.5);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .glass-card:hover {
+      border-color: rgba(99, 102, 241, 0.4);
+      transform: translateY(-2px);
+      background: rgba(31, 41, 55, 0.7);
+    }
+
+    .device-mobile { width: 375px; height: 600px; max-width: 100%; }
+    .device-tablet { width: 768px; height: 650px; max-width: 100%; }
+    .device-desktop { width: 100%; height: 100%; }
+
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.6); }
+    ::-webkit-scrollbar-thumb { background: rgba(99, 102, 241, 0.3); border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(99, 102, 241, 0.6); }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased selection:bg-indigo-500 selection:text-white">
+
+  <!-- Header Navigation -->
+  <header class="sticky top-0 z-40 glass-panel border-b border-white/10 px-4 lg:px-8 py-3.5 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-600 via-violet-600 to-pink-500 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+        <i data-lucide="rocket" class="w-5 h-5 text-white"></i>
+      </div>
+      <div>
+        <h1 class="text-lg font-black tracking-tight text-white flex items-center gap-2">
+          Hana Launchpad<span class="text-indigo-400">Hub</span>
+          <span class="text-[10px] px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 font-mono border border-indigo-500/30">WASM Edge v2.4</span>
+        </h1>
+        <p class="text-[11px] text-gray-400 font-medium">Serverless Edge Native Client-Side Beta Testing Nexus</p>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <!-- WASM Engine Readiness Status -->
+      <div id="wasm-badge" class="flex items-center gap-2 text-xs px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-mono">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span id="wasm-status-text">WASM Engine Ready</span>
+      </div>
+
+      <button id="btn-open-injector" class="px-4 py-2 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-indigo-600/20 transition-all flex items-center gap-2 active:scale-95">
+        <i data-lucide="plus-circle" class="w-4 h-4"></i>
+        <span>Snip New App</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Top Banner Ad Placement Slot -->
+  <div id="ad-slot-top" class="bg-gray-900/60 border-b border-white/5 py-2 px-4 text-center">
+    <div class="max-w-4xl mx-auto flex items-center justify-between gap-4 p-2.5 rounded-xl bg-gradient-to-r from-indigo-900/30 via-purple-900/20 to-gray-900 border border-indigo-500/20">
+      <div class="flex items-center gap-3">
+        <span class="text-[9px] font-black tracking-widest text-indigo-400 uppercase bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 rounded">SPONSORED ADMOB / ADSENSE SLOT</span>
+        <span class="text-xs text-gray-300 font-medium">Monetization Active • Serverless Edge Revenue Node</span>
+      </div>
+      <button class="text-xs text-indigo-400 hover:text-indigo-300 font-bold underline">Learn More</button>
+    </div>
+  </div>
+
+  <!-- Main Container -->
+  <div class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+    <!-- App Directory / Listing (Left Column) -->
+    <section class="lg:col-span-5 flex flex-col gap-4">
+      <div class="glass-panel p-4 rounded-2xl flex flex-col sm:flex-row gap-3 items-center justify-between">
+        <div class="relative w-full">
+          <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-3 text-gray-400"></i>
+          <input type="text" id="app-search" placeholder="Search beta apps..." class="w-full pl-10 pr-4 py-2 bg-white/5 border border-white/10 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50">
+        </div>
+        <select id="app-sort" class="w-full sm:w-auto px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-xs text-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/50">
+          <option value="valuation">Top Valuation</option>
+          <option value="rating">Highest Rated</option>
+          <option value="newest">Newest Beta</option>
+        </select>
+      </div>
+
+      <!-- Apps List Container -->
+      <div id="apps-container" class="space-y-4">
+        <!-- App cards injected dynamically -->
+      </div>
+    </section>
+
+    <!-- Sandbox & Detail Viewer (Right Column) -->
+    <section class="lg:col-span-7 flex flex-col gap-6 sticky top-20">
+
+      <!-- Sandbox Frame Wrapper -->
+      <div class="glass-panel rounded-3xl overflow-hidden flex flex-col border border-white/10 shadow-2xl">
+
+        <!-- Sandbox Toolbar -->
+        <div class="p-4 bg-gray-900/90 border-b border-white/10 flex flex-wrap items-center justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <div class="w-3 h-3 rounded-full bg-red-500"></div>
+            <div class="w-3 h-3 rounded-full bg-amber-500"></div>
+            <div class="w-3 h-3 rounded-full bg-emerald-500"></div>
+            <span id="sandbox-app-title" class="text-xs font-bold text-gray-200 ml-2">Select an App to Launch Sandbox</span>
+          </div>
+
+          <!-- Viewport Controls & Actions -->
+          <div class="flex items-center gap-2">
+            <div class="bg-white/5 p-1 rounded-xl border border-white/10 flex items-center gap-1">
+              <button id="view-mobile" class="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition" title="Mobile View"><i data-lucide="smartphone" class="w-4 h-4"></i></button>
+              <button id="view-tablet" class="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition" title="Tablet View"><i data-lucide="tablet" class="w-4 h-4"></i></button>
+              <button id="view-desktop" class="p-1.5 rounded-lg text-indigo-400 bg-white/10 transition" title="Desktop View"><i data-lucide="monitor" class="w-4 h-4"></i></button>
+            </div>
+            <button id="btn-fullscreen" class="p-2 bg-white/5 hover:bg-white/10 text-gray-300 rounded-xl border border-white/10 transition" title="Fullscreen Sandbox">
+              <i data-lucide="maximize-2" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Sandbox Canvas Area -->
+        <div id="sandbox-wrapper" class="bg-black/80 flex items-center justify-center p-4 min-h-[420px] max-h-[600px] overflow-auto relative">
+          <iframe id="sandbox-iframe" class="device-desktop border-0 bg-white rounded-xl shadow-2xl transition-all duration-300" sandbox="allow-scripts allow-forms allow-modals"></iframe>
+          <div id="sandbox-placeholder" class="absolute inset-0 flex flex-col items-center justify-center bg-gray-950 p-6 text-center">
+            <i data-lucide="box" class="w-12 h-12 text-indigo-500/40 mb-3 animate-bounce"></i>
+            <h3 class="text-sm font-bold text-gray-300">No App Running in Sandbox</h3>
+            <p class="text-xs text-gray-500 max-w-xs mt-1">Select any beta app from the directory to test it in real time in this secure WASM sandbox.</p>
+          </div>
+        </div>
+
+        <!-- Sandbox Footer Info & Valuator Bar -->
+        <div class="p-4 bg-gray-900/80 border-t border-white/10 flex flex-wrap items-center justify-between gap-4">
+          <div class="flex items-center gap-3">
+            <div class="px-3 py-1.5 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-mono">
+              <span class="text-gray-400">WASM Valuation:</span> <strong id="valuation-score">$0.00</strong>
+            </div>
+            <button id="btn-reevaluate" class="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1 font-semibold">
+              <i data-lucide="cpu" class="w-3.5 h-3.5"></i> Run Valuator
+            </button>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button id="btn-open-review" class="px-3.5 py-1.5 bg-indigo-600/80 hover:bg-indigo-600 text-white text-xs font-bold rounded-xl shadow transition flex items-center gap-1.5">
+              <i data-lucide="star" class="w-3.5 h-3.5"></i> Review App
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Discussion & Feedback Section -->
+      <div class="glass-panel p-6 rounded-3xl flex flex-col gap-4">
+        <div class="flex items-center justify-between border-b border-white/10 pb-4">
+          <h3 class="text-sm font-bold text-white flex items-center gap-2">
+            <i data-lucide="message-square" class="w-4 h-4 text-indigo-400"></i>
+            Tester Community Discussions
+          </h3>
+          <span id="comment-count" class="text-xs font-mono text-gray-400">0 Feedback Threads</span>
+        </div>
+
+        <!-- Comment Input -->
+        <form id="comment-form" class="space-y-3">
+          <textarea id="comment-input" rows="2" class="w-full p-3 bg-white/5 border border-white/10 rounded-2xl text-xs text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none" placeholder="Share bug reports, feedback, or suggestions for this beta app..."></textarea>
+          <div class="flex justify-end">
+            <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl transition flex items-center gap-1.5">
+              <i data-lucide="send" class="w-3.5 h-3.5"></i> Post Feedback
+            </button>
+          </div>
+        </form>
+
+        <!-- Feedback List -->
+        <div id="comments-container" class="space-y-3 max-h-60 overflow-y-auto pr-1">
+          <!-- Dynamic comments -->
+        </div>
+      </div>
+
+      <!-- Ad Placement Slot #2 -->
+      <div id="ad-slot-feed" class="p-4 rounded-2xl glass-card text-center border border-white/5">
+        <span class="text-[9px] font-black tracking-widest text-indigo-400 uppercase bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 rounded">INLINE ADMOB / AD PLACEMENT</span>
+        <p class="text-xs text-gray-400 mt-1">Support beta developers through quick ad views during testing cycles.</p>
+      </div>
+    </section>
+  </div>
+
+  <!-- Modal: Inject / Snip New App Code -->
+  <div id="modal-injector" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="glass-panel w-full max-w-2xl rounded-3xl border border-white/10 p-6 space-y-5 shadow-2xl relative">
+      <div class="flex justify-between items-center border-b border-white/10 pb-3">
+        <div class="flex items-center gap-2">
+          <i data-lucide="code-2" class="w-5 h-5 text-indigo-400"></i>
+          <h3 class="text-base font-extrabold text-white">Snip New App into Launchpad</h3>
+        </div>
+        <button id="btn-close-injector" class="text-gray-400 hover:text-white p-1 rounded-lg"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+
+      <form id="injector-form" class="space-y-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-bold text-gray-300 mb-1">App Name</label>
+            <input type="text" id="inj-name" required placeholder="e.g., Pixel Painter 3D" class="w-full p-2.5 bg-white/5 border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-gray-300 mb-1">Category</label>
+            <select id="inj-category" class="w-full p-2.5 bg-white/5 border border-white/10 rounded-xl text-xs text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              <option value="Navigation">Navigation / Offline Maps</option>
+              <option value="Game">Game / WebGL</option>
+              <option value="Tool">Productivity / Tool</option>
+              <option value="AI">AI / WASM Utility</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-gray-300 mb-1">App Description</label>
+          <input type="text" id="inj-desc" required placeholder="Brief overview of the app function..." class="w-full p-2.5 bg-white/5 border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        </div>
+
+        <div>
+          <div class="flex justify-between items-center mb-1">
+            <label class="block text-xs font-bold text-gray-300">Single-File HTML / Web Bundle Source Code</label>
+            <span class="text-[10px] text-indigo-400 font-mono">Paste full HTML/JS/CSS source code</span>
+          </div>
+          <textarea id="inj-code" rows="8" required placeholder="<!DOCTYPE html><html><head>...</head><body><h1>Hello App</h1></body></html>" class="w-full p-3 bg-black/60 border border-white/10 rounded-xl text-xs font-mono text-emerald-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"></textarea>
+        </div>
+
+        <div class="flex justify-end gap-3 pt-2">
+          <button type="button" id="btn-cancel-injector" class="px-4 py-2 bg-white/5 hover:bg-white/10 text-gray-300 text-xs font-bold rounded-xl">Cancel</button>
+          <button type="submit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-indigo-600/30">
+            Deploy to Hub Directory
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Review & Rating Popup -->
+  <div id="modal-review" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="glass-panel w-full max-w-md rounded-3xl border border-white/10 p-6 space-y-4 shadow-2xl relative">
+      <div class="flex justify-between items-center">
+        <h3 class="text-base font-bold text-white">Rate & Review Beta App</h3>
+        <button id="btn-close-review" class="text-gray-400 hover:text-white p-1 rounded-lg"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+
+      <div class="flex justify-center gap-2 py-2" id="star-selector">
+        <i data-lucide="star" data-star="1" class="w-8 h-8 text-gray-600 cursor-pointer hover:text-amber-400 transition"></i>
+        <i data-lucide="star" data-star="2" class="w-8 h-8 text-gray-600 cursor-pointer hover:text-amber-400 transition"></i>
+        <i data-lucide="star" data-star="3" class="w-8 h-8 text-gray-600 cursor-pointer hover:text-amber-400 transition"></i>
+        <i data-lucide="star" data-star="4" class="w-8 h-8 text-gray-600 cursor-pointer hover:text-amber-400 transition"></i>
+        <i data-lucide="star" data-star="5" class="w-8 h-8 text-gray-600 cursor-pointer hover:text-amber-400 transition"></i>
+      </div>
+
+      <textarea id="review-text" rows="3" class="w-full p-3 bg-white/5 border border-white/10 rounded-2xl text-xs text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none" placeholder="Write your full review..."></textarea>
+
+      <button id="btn-submit-review" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow-lg transition">
+        Submit Rating & Recalculate WASM Valuation
+      </button>
+    </div>
+  </div>
+
+  <!-- Application Bundle Bootstrapper -->
+  <script type="module" src="src/app.js"></script>
+
+  <!-- Service Worker Registration -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').then((reg) => {
+          console.log('Launchpad Hub SW registered:', reg);
+        }).catch((err) => {
+          console.warn('SW registration failed:', err);
+        });
+      });
+    }
+  </script>
+</body>
+</html>

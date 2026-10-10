@@ -1,0 +1,26 @@
+{
+  "name": "Hana Runner Launchpad Hub",
+  "short_name": "Launchpad",
+  "description": "Beta testing platform for offline-first, serverless WASM applications",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#090d16",
+  "theme_color": "#090d16",
+  "categories": ["productivity", "developer", "utilities"],
+  "icons": [
+    {
+      "src": "/assets/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
