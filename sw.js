@@ -14,6 +14,19 @@ self.addEventListener('install', (event) => {
       console.log('[Service Worker] Pre-caching Application Shell & WASM Library');
       return cache.addAll(ASSETS_TO_CACHE);
     }).catch(err => console.warn('[Service Worker] Install warning:', err))
+const CACHE_NAME = 'launchpad-v1';
+const ASSETS = [
+  '/',
+  '/index.html',
+  '/manifest.json',
+  '/src/registry/AppRegistry.js',
+  '/src/engine/Valuator.js',
+  '/src/store/LocalStore.js'
+];
+
+self.addEventListener('install', (e) => {
+  e.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
   );
   self.skipWaiting();
 });
@@ -31,6 +44,13 @@ self.addEventListener('activate', (event) => {
         })
       );
     })
+self.addEventListener('activate', (e) => {
+  e.waitUntil(
+    caches.keys().then((keys) =>
+      Promise.all(
+        keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k))
+      )
+    )
   );
   self.clients.claim();
 });
@@ -73,5 +93,25 @@ self.addEventListener('fetch', (event) => {
 
       return cachedResponse || fetchPromise;
     })
+self.addEventListener('fetch', (e) => {
+  if (e.request.method !== 'GET') return;
+  e.respondWith(
+    caches.match(e.request).then((res) => {
+      return (
+        res ||
+        fetch(e.request).then((networkRes) => {
+          if (
+            networkRes.ok &&
+            e.request.url.startsWith(self.location.origin)
+          ) {
+            const cacheCopy = networkRes.clone();
+            caches
+              .open(CACHE_NAME)
+              .then((cache) => cache.put(e.request, cacheCopy));
+          }
+          return networkRes;
+        })
+      );
+    }).catch(() => caches.match('/index.html'))
   );
 });
