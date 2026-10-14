@@ -1,0 +1,19 @@
+{
+  "sampleUser": {
+    "name": "Alex Vance",
+    "email": "alex.vance@example.com",
+    "streak": 12,
+    "tone": "Gentle & Nurturing",
+    "goal": "Cultivate calm communication with family and coworkers"
+  },
+  "mockMoodHistory": [
+    { "date": "2025-02-17", "mood": "Centered", "intensity": 8, "note": "Finished a 1-min breathing exercise before morning meeting." },
+    { "date": "2025-02-18", "mood": "Restless", "intensity": 5, "note": "Felt deadline pressure. Used AI Companion space to reframe thoughts." },
+    { "date": "2025-02-19", "mood": "Peaceful", "intensity": 9, "note": "Great walk at sunset." }
+  ],
+  "testLicenseKeys": {
+    "pro": "SERENITY-PRO",
+    "premium": "PREMIUM",
+    "gumroadValid": "GUMROAD-VALID-KEY"
+  }
+}
