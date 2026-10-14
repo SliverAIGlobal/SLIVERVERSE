@@ -4,7 +4,8 @@ import {
   Sparkles, Wind, Key, Check, Play, Pause,
   Share2, Download, Sliders, Volume2, Send,
   Mic, MicOff, Camera, Flame, Sparkle, Menu, X,
-  Coffee, Clock, Moon, Sun, Smile, Bookmark
+  Coffee, Clock, Moon, Sun, Smile, Bookmark, Wand2, Compass,
+  ShieldCheck
 } from 'lucide-react';
 
 const HF_GEMMA_MODEL = "google/gemma-2-9b-it";
@@ -16,12 +17,20 @@ const PERSONA_PROMPTS = {
   friend: "You are Athena Daniels acting as a Fun Best Friend. You love chatting about good times, generating fun simulated photo memories, sharing jokes, and planning imaginary road trips."
 };
 
+const SAMPLE_PHOTO_PROMPTS = [
+  "Lanternlit evening balcony overlooking rainy Tokyo streets with warm hot tea",
+  "Sunset coastal drive in a vintage convertible along the Amalfi cliffside",
+  "Candlelit vinyl record parlor listening to jazz under cozy wool blankets",
+  "Starlight campfire by a still mountain lake under the Aurora Borealis",
+  "Cozy Sunday morning kitchen baking cinnamon rolls in warm sunlight"
+];
+
 export default function App() {
   const [activeTab, setActiveTab] = useState('companion_hub'); // companion_hub, girlfriend_hub, friend_hub, chat, wellness, journal, photos, settings
   const [relationshipMode, setRelationshipMode] = useState('companion'); // companion, girlfriend, friend
   const [voiceOutputEnabled, setVoiceOutputEnabled] = useState(true);
   const [hfModel, setHfModel] = useState(HF_GEMMA_MODEL);
-  const [hfKey, setHfKey] = useState(() => localStorage.getItem('SERENITY_HF_API_KEY') || '');
+  const [userCustomKey, setUserCustomKey] = useState(() => localStorage.getItem('ATHENA_CUSTOM_KEY') || '');
   const [avatarUrl, setAvatarUrl] = useState('https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -46,7 +55,20 @@ export default function App() {
 
   // Photos
   const [photos, setPhotos] = useState([
-    { id: 1, prompt: 'Cozy autumn coffee date reminiscing about the good ol days', url: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=600&q=80', date: 'Oct 10, 2026' }
+    {
+      id: 1,
+      title: 'Starlight Lake Cabin',
+      prompt: 'Candlelit wooden lakehouse dock under a starry night sky with gentle reflections',
+      url: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80',
+      date: 'Oct 10, 2026'
+    },
+    {
+      id: 2,
+      title: 'Vintage Record Parlor',
+      prompt: 'Cozy jazz lounge with warm ambient string lights and vinyl albums',
+      url: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=800&q=80',
+      date: 'Oct 08, 2026'
+    }
   ]);
   const [photoPrompt, setPhotoPrompt] = useState('');
 
@@ -116,23 +138,28 @@ export default function App() {
 
     try {
       const mode = modeOverride || relationshipMode;
-      const keyToUse = hfKey || localStorage.getItem('SERENITY_HF_API_KEY') || window.VITE_HF_API_KEY || "";
       const systemPrompt = PERSONA_PROMPTS[mode] || PERSONA_PROMPTS.companion;
 
+      const promptPayload = {
+        model: hfModel,
+        payload: {
+          inputs: `<start_of_turn>system\n${systemPrompt}<end_of_turn>\n` +
+            newMsgs.slice(-6).map(m => `<start_of_turn>${m.speaker === 'user' ? 'user' : 'model'}\n${m.text}<end_of_turn>\n`).join('') +
+            `<start_of_turn>model\n`,
+          parameters: { max_new_tokens: 250, temperature: 0.8, return_full_text: false }
+        }
+      };
+
+      // Serverless Proxy Endpoint (Hides API Key from Client)
       const headers = { 'Content-Type': 'application/json' };
-      if (keyToUse) headers['Authorization'] = `Bearer ${keyToUse}`;
+      if (userCustomKey.trim()) {
+        headers['X-Athena-Key'] = userCustomKey.trim();
+      }
 
-      const promptPayload = `<start_of_turn>system\n${systemPrompt}<end_of_turn>\n` +
-        newMsgs.slice(-6).map(m => `<start_of_turn>${m.speaker === 'user' ? 'user' : 'model'}\n${m.text}<end_of_turn>\n`).join('') +
-        `<start_of_turn>model\n`;
-
-      const response = await fetch(`https://api-inference.huggingface.co/models/${hfModel}`, {
+      const response = await fetch('/api/chat', {
         method: 'POST',
         headers,
-        body: JSON.stringify({
-          inputs: promptPayload,
-          parameters: { max_new_tokens: 250, temperature: 0.8, return_full_text: false }
-        })
+        body: JSON.stringify(promptPayload)
       });
 
       if (response.ok) {
@@ -236,12 +263,16 @@ export default function App() {
   };
 
   const generatePhoto = () => {
-    const prompt = photoPrompt.trim() || "Athena Daniels reminiscing about good times";
+    const prompt = photoPrompt.trim() || SAMPLE_PHOTO_PROMPTS[Math.floor(Math.random() * SAMPLE_PHOTO_PROMPTS.length)];
+    const titles = ["Candlelit Serenade", "Midnight Horizon", "Sunset Coastal Drive", "Starlight Memory", "Cozy Sanctuary"];
+    const title = titles[Math.floor(Math.random() * titles.length)];
+
     setPhotos([
       {
         id: Date.now(),
+        title,
         prompt,
-        url: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=600&q=80',
+        url: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=800&q=80',
         date: 'Just now'
       },
       ...photos
@@ -360,7 +391,7 @@ export default function App() {
             }`}
           >
             <Sliders className="w-5 h-5" />
-            <span>Customizer & Open Models</span>
+            <span>Customizer & Serverless Edge</span>
           </button>
         </nav>
       </aside>
@@ -608,39 +639,110 @@ export default function App() {
           </div>
         )}
 
-        {/* Tab 7: Photos */}
+        {/* Tab 7: Enhanced Photos & Visual Memories */}
         {activeTab === 'photos' && (
           <div className="flex-1 overflow-y-auto p-6 max-w-4xl mx-auto space-y-6">
-            <h2 className="font-serif text-3xl font-bold text-white">Athena's Gallery & Photo Moments</h2>
-            <div className="flex gap-4">
-              <input type="text" placeholder="Describe a photo moment..." value={photoPrompt} onChange={(e) => setPhotoPrompt(e.target.value)} className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm text-slate-200" />
-              <button onClick={generatePhoto} className="px-6 py-3 bg-purple-600 text-white rounded-xl text-sm font-bold">Capture Photo</button>
+            <div>
+              <h2 className="font-serif text-3xl font-bold text-white">Athena's Visual Gallery & Photo Memories</h2>
+              <p className="text-slate-400 text-sm mt-1">Capture imaginative scenes, nostalgic dates, and starlight moments with Athena.</p>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+
+            <div className="p-6 rounded-3xl bg-[#16192b] border border-slate-800 space-y-4">
+              <div className="flex gap-3">
+                <input
+                  type="text"
+                  placeholder="Describe a rich scene (e.g. Lanternlit balcony overlooking rainy Kyoto)..."
+                  value={photoPrompt}
+                  onChange={(e) => setPhotoPrompt(e.target.value)}
+                  className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:border-amber-500"
+                />
+                <button onClick={generatePhoto} className="px-6 py-3 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-sm font-bold flex items-center gap-2">
+                  <Wand2 className="w-4 h-4" />
+                  <span>Capture Photo</span>
+                </button>
+              </div>
+
+              <div>
+                <p className="text-xs font-semibold text-slate-400 mb-2">Inspirational Prompts:</p>
+                <div className="flex flex-wrap gap-2">
+                  {SAMPLE_PHOTO_PROMPTS.map((p, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setPhotoPrompt(p)}
+                      className="px-3 py-1 bg-slate-900 border border-slate-800 hover:border-amber-500/50 text-[11px] text-slate-300 rounded-full transition"
+                    >
+                      {p}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               {photos.map(p => (
-                <div key={p.id} className="rounded-2xl overflow-hidden border border-slate-800 bg-[#16192b]">
-                  <img src={p.url} className="w-full h-48 object-cover" />
-                  <p className="p-3 text-xs text-slate-300">{p.prompt}</p>
+                <div key={p.id} className="rounded-2xl overflow-hidden border border-slate-800 bg-[#16192b] shadow-xl">
+                  <img src={p.url} className="w-full h-56 object-cover" />
+                  <div className="p-4 space-y-1">
+                    <h4 className="font-bold text-sm text-amber-200">{p.title || 'Captured Moment'}</h4>
+                    <p className="text-xs text-slate-300 leading-relaxed italic">"{p.prompt}"</p>
+                    <span className="text-[10px] text-slate-500 block pt-1">{p.date}</span>
+                  </div>
                 </div>
               ))}
             </div>
           </div>
         )}
 
-        {/* Tab 8: Settings */}
+        {/* Tab 8: Settings & Serverless Edge Customizer */}
         {activeTab === 'settings' && (
           <div className="flex-1 overflow-y-auto p-6 max-w-3xl mx-auto space-y-6">
-            <h2 className="font-serif text-3xl font-bold text-white">Persona & Open Model Customizer</h2>
-            <div className="p-6 rounded-2xl bg-[#16192b] border border-slate-800 space-y-4">
-              <label className="text-sm font-bold text-slate-200 block">HuggingFace API Key Setup</label>
-              <input type="password" value={hfKey} onChange={(e) => setHfKey(e.target.value)} placeholder="hf_..." className="w-full p-2.5 bg-slate-900 border border-slate-700 rounded-xl text-xs font-mono text-slate-200" />
-              <button onClick={() => { localStorage.setItem('SERENITY_HF_API_KEY', hfKey.trim()); alert("Key saved!"); }} className="px-4 py-2 bg-purple-600 text-white rounded-xl text-xs font-bold">Save Key</button>
+            <h2 className="font-serif text-3xl font-bold text-white">Persona & Serverless Edge Customizer</h2>
 
-              <label className="text-sm font-bold text-slate-200 block mt-4">HuggingFace Inference Model</label>
-              <select value={hfModel} onChange={(e) => setHfModel(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-xs text-slate-200">
-                <option value="google/gemma-2-9b-it">Google Gemma 2 9B Instruct</option>
+            <div className="p-6 rounded-2xl bg-[#16192b] border border-slate-800 space-y-4">
+              <div className="p-4 rounded-xl bg-slate-900 border border-emerald-500/30 text-xs text-emerald-300 flex items-center gap-2">
+                <ShieldCheck className="w-5 h-5 text-emerald-400 flex-shrink-0" />
+                <span>Client-side hardcoded API keys are disabled for security. Default requests route via Edge Serverless WASM proxies (`/api/chat`).</span>
+              </div>
+
+              <label className="text-sm font-bold text-slate-200 block flex items-center gap-2">
+                <Key className="w-4 h-4 text-amber-400" /> Optional Custom User HuggingFace Key
+              </label>
+              <p className="text-xs text-slate-400">
+                You may optionally provide your own personal HuggingFace user token (`hf_...`) to bypass shared rate limits:
+              </p>
+              <input
+                type="password"
+                value={userCustomKey}
+                onChange={(e) => setUserCustomKey(e.target.value)}
+                placeholder="hf_... (optional)"
+                className="w-full p-2.5 bg-slate-900 border border-slate-700 rounded-xl text-xs font-mono text-slate-200 focus:outline-none focus:border-amber-500"
+              />
+              <button
+                onClick={() => {
+                  localStorage.setItem('ATHENA_CUSTOM_KEY', userCustomKey.trim());
+                  alert("Optional custom key saved!");
+                }}
+                className="px-4 py-2 bg-amber-600 text-white rounded-xl text-xs font-bold"
+              >
+                Save Custom Key
+              </button>
+
+              <label className="text-sm font-bold text-slate-200 block mt-6">Open Source Model Selection (HuggingFace Inference API)</label>
+              <select
+                value={hfModel}
+                onChange={(e) => setHfModel(e.target.value)}
+                className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-xs text-slate-200"
+              >
+                <option value="google/gemma-2-9b-it">Google Gemma 2 9B Instruct (Recommended)</option>
                 <option value="mistralai/Mistral-7B-Instruct-v0.3">Mistral 7B Instruct v0.3</option>
               </select>
+
+              <label className="text-sm font-bold text-slate-200 block mt-4">Active Relationship Dynamic</label>
+              <div className="grid grid-cols-3 gap-3">
+                <button onClick={() => { setRelationshipMode('companion'); setActiveTab('companion_hub'); }} className={`p-3 rounded-xl border text-xs font-bold ${relationshipMode === 'companion' ? 'bg-amber-600/30 border-amber-500 text-amber-300' : 'bg-slate-900 border-slate-800 text-slate-400'}`}>☕ Companion</button>
+                <button onClick={() => { setRelationshipMode('girlfriend'); setActiveTab('girlfriend_hub'); }} className={`p-3 rounded-xl border text-xs font-bold ${relationshipMode === 'girlfriend' ? 'bg-rose-600/30 border-rose-500 text-rose-300' : 'bg-slate-900 border-slate-800 text-slate-400'}`}>💖 Girlfriend</button>
+                <button onClick={() => { setRelationshipMode('friend'); setActiveTab('friend_hub'); }} className={`p-3 rounded-xl border text-xs font-bold ${relationshipMode === 'friend' ? 'bg-sky-600/30 border-sky-500 text-sky-300' : 'bg-slate-900 border-slate-800 text-slate-400'}`}>👭 Best Friend</button>
+              </div>
             </div>
           </div>
         )}
