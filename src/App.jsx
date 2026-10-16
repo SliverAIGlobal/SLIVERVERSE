@@ -1,31 +1,49 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  Heart, MessageSquare, BookOpen, User,
-  Sparkles, Wind, Bell, Key, ShieldCheck,
-  Zap, Check, X, ArrowRight, Play, Pause,
-  Share2, Download, Printer, Lock, ChevronRight,
-  Smile, Frown, AlertCircle, RefreshCw, Sliders,
-  Crown, Smartphone, Send, Mic, MicOff, Volume2,
-  PhoneCall, MessageCircle, BarChart3, Sun, Moon,
-  Copy, ExternalLink, MapPin, Calendar, Clock,
-  Trophy, BookMarked, Bookmark, ShoppingBag, Target
+  Sparkles, Compass, Globe, Search, Copy, Download, Share2, RefreshCw,
+  Check, X, Moon, Sun, Sliders, Palette, Key, Info,
+  Award, Coins, Flame, Wand2, Ghost, Heart, Smile, Eye, Layers,
+  MessageSquareText, HelpCircle, ChevronRight, Play, Filter, Zap,
+  Bookmark, Send, ExternalLink, Trophy, SmilePlus, Feather
 } from 'lucide-react';
 
-// --- API & TTS HELPERS ---
+// --- SERVICE & APP CONFIGURATION ---
 const GEMINI_MODEL = "gemini-2.5-flash-preview-09-2025";
-const GEMINI_TTS_MODEL = "gemini-2.5-flash-preview-tts";
+const CONFIG_STORAGE_KEY = "EMOJI_EXTRAVAGANZA_SERVICE_CRED";
 
-const getStoredApiKey = () => {
-  return localStorage.getItem('EMPATHY_AI_API_KEY') || window.VITE_GEMINI_API_KEY || "";
+const encodeServiceCredential = (val) => {
+  if (!val) return "";
+  try {
+    return btoa(encodeURIComponent(val));
+  } catch (e) {
+    return val;
+  }
 };
 
-const callGeminiAPI = async (modelName, prompt, generationConfig, maxRetries = 2) => {
-  const apiKey = getStoredApiKey();
-  if (!apiKey) {
+const decodeServiceCredential = (val) => {
+  if (!val) return "";
+  try {
+    return decodeURIComponent(atob(val));
+  } catch (e) {
+    return val;
+  }
+};
+
+const getAppServiceToken = () => {
+  const storedEnc = localStorage.getItem(CONFIG_STORAGE_KEY);
+  if (storedEnc) {
+    return decodeServiceCredential(storedEnc);
+  }
+  return window.VITE_GEMINI_API_KEY || "";
+};
+
+const callGeminiAPI = async (prompt, generationConfig = {}, maxRetries = 2) => {
+  const token = getAppServiceToken();
+  if (!token) {
     throw new Error("NO_API_KEY");
   }
 
-  const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+  const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${token}`;
   const payload = {
     contents: [{ parts: [{ text: prompt }] }],
     generationConfig: generationConfig,
@@ -58,124 +76,6 @@ const callGeminiAPI = async (modelName, prompt, generationConfig, maxRetries = 2
   }
 };
 
-const pcmToWav = (pcm16, sampleRate) => {
-  const numChannels = 1;
-  const bitsPerSample = 16;
-  const byteRate = sampleRate * numChannels * (bitsPerSample / 8);
-  const blockAlign = numChannels * (bitsPerSample / 8);
-  const dataSize = pcm16.length * 2;
-  const chunkSize = 36 + dataSize;
-
-  const buffer = new ArrayBuffer(44 + dataSize);
-  const view = new DataView(buffer);
-
-  let offset = 0;
-  const writeString = (str) => {
-    for (let i = 0; i < str.length; i++) {
-      view.setUint8(offset++, str.charCodeAt(i));
-    }
-  };
-
-  writeString('RIFF');
-  view.setUint32(offset, chunkSize, true); offset += 4;
-  writeString('WAVE');
-  writeString('fmt ');
-  view.setUint32(offset, 16, true); offset += 4;
-  view.setUint16(offset, 1, true); offset += 2;
-  view.setUint16(offset, numChannels, true); offset += 2;
-  view.setUint32(offset, sampleRate, true); offset += 4;
-  view.setUint32(offset, byteRate, true); offset += 4;
-  view.setUint16(offset, blockAlign, true); offset += 2;
-  view.setUint16(offset, bitsPerSample, true); offset += 2;
-  writeString('data');
-  view.setUint32(offset, dataSize, true); offset += 4;
-
-  for (let i = 0; i < pcm16.length; i++, offset += 2) {
-    view.setInt16(offset, pcm16[i], true);
-  }
-
-  return new Blob([buffer], { type: 'audio/wav' });
-};
-
-const generateAndPlayTTS = async (textToSpeak) => {
-  const apiKey = getStoredApiKey();
-  if (!apiKey) {
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(textToSpeak);
-      utterance.pitch = 1.0;
-      utterance.rate = 0.95;
-      window.speechSynthesis.speak(utterance);
-    }
-    return;
-  }
-
-  const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_TTS_MODEL}:generateContent?key=${apiKey}`;
-  const payload = {
-    contents: [{
-      parts: [{ text: `Say in a warm, empathetic and gentle tone: ${textToSpeak}` }]
-    }],
-    generationConfig: {
-      responseModalities: ["AUDIO"],
-      speechConfig: {
-        voiceConfig: {
-          prebuiltVoiceConfig: { voiceName: "Kore" }
-        }
-      }
-    }
-  };
-
-  try {
-    const response = await fetch(apiUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-
-    const result = await response.json();
-    const part = result?.candidates?.[0]?.content?.parts?.[0];
-    const audioData = part?.inlineData?.data;
-    const mimeType = part?.inlineData?.mimeType;
-
-    if (audioData && mimeType && mimeType.startsWith("audio/")) {
-      const sampleRateMatch = mimeType.match(/rate=(\d+)/);
-      const sampleRate = sampleRateMatch ? parseInt(sampleRateMatch[1], 10) : 24000;
-
-      const binaryString = atob(audioData);
-      const len = binaryString.length;
-      const bytes = new Uint8Array(len);
-      for (let i = 0; i < len; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
-      }
-
-      const pcm16 = new Int16Array(bytes.buffer);
-      const wavBlob = pcmToWav(pcm16, sampleRate);
-      const audioUrl = URL.createObjectURL(wavBlob);
-      const audio = new Audio(audioUrl);
-      audio.play();
-    }
-  } catch (e) {
-    console.warn("TTS playback fallback:", e);
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(textToSpeak);
-      window.speechSynthesis.speak(utterance);
-    }
-  }
-};
-
-const downloadFile = (filename, content, mimeType = 'text/plain') => {
-  const blob = new Blob([content], { type: mimeType });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
-};
-
 const safeCopyToClipboard = async (text) => {
   try {
     if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -183,7 +83,7 @@ const safeCopyToClipboard = async (text) => {
       return true;
     }
   } catch (err) {
-    console.warn("Clipboard API blocked.", err);
+    console.warn("Clipboard API blocked, falling back.", err);
   }
 
   try {
@@ -204,1877 +104,1289 @@ const safeCopyToClipboard = async (text) => {
   }
 };
 
-const generatePersonalizedInterjection = (userProfile, activeScenario, lastUserMessage, index) => {
-  const timeOfDay = userProfile.timeOfDay || "Today";
-  const name = userProfile.name || "Friend";
-  const location = userProfile.location || "Your Space";
-  const dateStr = userProfile.currentDate;
-
-  const cards = [
-    {
-      type: 'quote',
-      title: `${timeOfDay} Reflection${name ? ` for ${name}` : ''}`,
-      quote: "Empathy is not about fixing another person's storm; it's about staying anchored beside them until the sky clears.",
-      author: "Dr. Brené Brown",
-      bgGradient: "from-purple-600 via-indigo-600 to-blue-600",
-      prompt: `Taking a moment${location ? ` in ${location}` : ''} on ${dateStr}: How does this perspective resonate with what you are sharing right now?`,
-      metadata: { location, date: dateStr, recipient: name }
-    },
-    {
-      type: 'activity',
-      title: `4-7-8 Mindful Breath • ${timeOfDay} Reset`,
-      description: `Pause for 15 seconds${name ? `, ${name}` : ''}. Let go of tension gathered${location ? ` in ${location}` : ''} today before composing your next response.`,
-      activityType: 'breathing',
-      bgGradient: "from-teal-600 via-emerald-600 to-cyan-700",
-      metadata: { location, date: dateStr, recipient: name }
-    },
-    {
-      type: 'image_card',
-      title: `Sanctuary Signal${location ? ` • ${location}` : ''}`,
-      imageUrl: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80',
-      caption: `${name ? `${name}, ` : ''}like the steady tide at the shore, your authentic boundaries protect your calm regardless of outer turmoil.`,
-      bgGradient: "from-blue-600 via-indigo-700 to-purple-700",
-      metadata: { location, date: dateStr, recipient: name }
-    },
-    {
-      type: 'journal_prompt',
-      title: `Hyper-Personal Reflection${name ? ` for ${name}` : ''}`,
-      question: lastUserMessage
-        ? `Reflecting on "${lastUserMessage.slice(0, 60)}...": What core underlying need is driving this response?`
-        : `What is one unspoken feeling you want to honor for yourself${location ? ` in ${location}` : ''} right now?`,
-      bgGradient: "from-amber-500 via-orange-600 to-rose-600",
-      metadata: { location, date: dateStr, recipient: name }
-    }
-  ];
-
-  return cards[index % cards.length];
+const downloadFile = (filename, content, mimeType = 'text/plain') => {
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 };
 
-// --- BREATHING WIDGET ---
-const BreathingWidget = () => {
-  const [phase, setPhase] = useState('Inhale');
-  const [seconds, setSeconds] = useState(4);
-  const [isActive, setIsActive] = useState(false);
-
-  useEffect(() => {
-    let interval = null;
-    if (isActive) {
-      interval = setInterval(() => {
-        setSeconds((prev) => {
-          if (prev > 1) return prev - 1;
-          if (phase === 'Inhale') { setPhase('Hold'); return 7; }
-          if (phase === 'Hold') { setPhase('Exhale'); return 8; }
-          setPhase('Inhale'); return 4;
-        });
-      }, 1000);
-    } else {
-      setPhase('Inhale');
-      setSeconds(4);
-    }
-    return () => clearInterval(interval);
-  }, [isActive, phase]);
-
-  return (
-    <div className="flex flex-col items-center justify-center p-4 bg-white/10 backdrop-blur-sm rounded-xl text-white my-1">
-      <div className={`w-20 h-20 rounded-full flex items-center justify-center border-4 border-white/40 transition-all duration-1000 transform ${isActive ? (phase === 'Inhale' ? 'scale-125 bg-white/20' : phase === 'Hold' ? 'scale-125 bg-white/30' : 'scale-90 bg-white/10') : 'scale-100'}`}>
-        <Wind className="w-8 h-8 text-white animate-pulse" />
-      </div>
-      <div className="mt-3 text-center">
-        <span className="text-lg font-bold block">{isActive ? `${phase} (${seconds}s)` : '4-7-8 Mindful Reset'}</span>
-        <button
-          onClick={() => setIsActive(!isActive)}
-          className="mt-2 px-4 py-1.5 bg-white text-emerald-800 rounded-full text-xs font-semibold shadow hover:bg-emerald-50 transition-colors"
-        >
-          {isActive ? 'Pause' : 'Start Breathing Pause'}
-        </button>
-      </div>
-    </div>
-  );
+// --- OFFLINE DATASETS ---
+const PRESET_DECIPHERS = {
+  "🎃👻🕯️": {
+    primarySentiment: "Nostalgic Spooky Whimsy",
+    subtext: "A longing for autumn twilight, childhood Halloween memories, and cozy mysterious magic.",
+    culturalContext: "Widely understood across North America and Western Europe as festive anticipation for Halloween, representing cozy spooky vibes.",
+    periSensorMetrics: { arousal: 78, valence: 85, emotionalTone: "Joyful Mystery" }
+  },
+  "🥺👉👈": {
+    primarySentiment: "Playful Vulnerability & Shy Supplication",
+    subtext: "Seeking gentle validation or making a modest request with soft innocence and timid affection.",
+    culturalContext: "Originated in East Asian anime subcultures (uwu culture) and popularized globally on TikTok & internet slang.",
+    periSensorMetrics: { arousal: 42, valence: 68, emotionalTone: "Timid Warmth" }
+  },
+  "🐍🍷✨": {
+    primarySentiment: "Sassy Empowerment & Unapologetic Confidence",
+    subtext: "Reclaiming former gossip or drama with elegant sophistication, humor, and cosmic flair.",
+    culturalContext: "Modern Western internet culture symbol for turning betrayal or drama into classy self-care.",
+    periSensorMetrics: { arousal: 82, valence: 75, emotionalTone: "Sass & Elegance" }
+  },
+  "🌊🐚🌙": {
+    primarySentiment: "Serene Oceanic Solitude",
+    subtext: "A deep yearning for quiet nocturnal reflection by the sea, cleansing emotional fatigue.",
+    culturalContext: "Universal symbol across coastal and island cultures representing spiritual stillness and emotional tide alignment.",
+    periSensorMetrics: { arousal: 25, valence: 92, emotionalTone: "Deep Calm" }
+  },
+  "🍂🌧️☕": {
+    primarySentiment: "Cozy Autumn Hygge",
+    subtext: "Finding comfort in solitude while rainy drops patter against the window; honoring introspective warmth.",
+    culturalContext: "Commonly used in Northern European and East Asian urban contexts to signify warm contentment during gloomy days.",
+    periSensorMetrics: { arousal: 35, valence: 88, emotionalTone: "Quiet Comfort" }
+  },
+  "🧘‍♀️✨🌸": {
+    primarySentiment: "Mindful Bloom & Spiritual Awakening",
+    subtext: "A conscious release of external stress, embracing self-compassion and inner harmony.",
+    culturalContext: "Deeply rooted in East Asian & South Asian mindfulness philosophies, adopted globally for wellness and peace.",
+    periSensorMetrics: { arousal: 30, valence: 96, emotionalTone: "Inner Harmony" }
+  }
 };
 
-// --- INTERJECTION CARD COMPONENT ---
-const InterjectionCard = ({ item }) => {
-  const [copied, setCopied] = useState(false);
-
-  const handleCopy = async (text) => {
-    const success = await safeCopyToClipboard(text);
-    if (success) {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
-  };
-
-  return (
-    <div className={`my-4 p-5 rounded-2xl bg-gradient-to-r ${item.bgGradient} text-white shadow-lg transform transition-all hover:scale-[1.01] relative overflow-hidden border border-white/10`}>
-      {item.metadata && (item.metadata.location || item.metadata.date) && (
-        <div className="flex items-center justify-between text-[10px] uppercase font-bold tracking-widest text-white/70 border-b border-white/15 pb-2 mb-3">
-          {item.metadata.location && (
-            <span className="flex items-center gap-1">
-              <MapPin className="w-3 h-3 text-white/90" /> {item.metadata.location}
-            </span>
-          )}
-          <span className="flex items-center gap-1">
-            <Calendar className="w-3 h-3 text-white/90" /> {item.metadata.date}
-          </span>
-        </div>
-      )}
-
-      <div className="flex items-center space-x-2 text-xs font-bold uppercase tracking-wider text-white/90 mb-2">
-        {item.type === 'quote' && <Sparkles className="w-4 h-4" />}
-        {item.type === 'activity' && <Wind className="w-4 h-4" />}
-        {item.type === 'image_card' && <Heart className="w-4 h-4" />}
-        {item.type === 'journal_prompt' && <BookOpen className="w-4 h-4" />}
-        <span>{item.title}</span>
-      </div>
-
-      {item.type === 'quote' && (
-        <div>
-          <p className="text-base md:text-lg font-serif italic mb-2">"{item.quote}"</p>
-          <p className="text-xs text-white/80 font-medium text-right mb-3">— {item.author}</p>
-          <div className="bg-black/20 backdrop-blur-md p-3 rounded-xl text-xs text-white/95 border border-white/10">
-            <strong className="block text-white mb-0.5 font-sans">Personal Reflection:</strong> {item.prompt}
-          </div>
-        </div>
-      )}
-
-      {item.type === 'activity' && (
-        <div>
-          <p className="text-xs md:text-sm mb-3 text-white/90 font-medium leading-relaxed">{item.description}</p>
-          <BreathingWidget />
-        </div>
-      )}
-
-      {item.type === 'image_card' && (
-        <div className="space-y-3">
-          <div className="overflow-hidden rounded-xl h-44 w-full relative shadow-md">
-            <img src={item.imageUrl} alt={item.title} className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-500" />
-          </div>
-          <p className="text-xs md:text-sm text-white/95 italic bg-black/20 backdrop-blur-md p-3 rounded-xl border border-white/10">{item.caption}</p>
-        </div>
-      )}
-
-      {item.type === 'journal_prompt' && (
-        <div className="space-y-3">
-          <p className="text-base font-semibold leading-snug">{item.question}</p>
-          <button
-            onClick={() => handleCopy(item.question)}
-            className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-white/20 hover:bg-white/30 text-white rounded-lg text-xs transition-colors font-medium backdrop-blur-sm"
-          >
-            {copied ? <Check className="w-3.5 h-3.5 text-green-300" /> : <BookOpen className="w-3.5 h-3.5" />}
-            <span>{copied ? 'Prompt Copied!' : 'Copy Personal Reflection'}</span>
-          </button>
-        </div>
-      )}
-    </div>
-  );
-};
-
-// --- USER PROFILE MODAL ---
-const UserProfileModal = ({ isOpen, onClose, userProfile, setUserProfile, onOpenSettings }) => {
-  const [name, setName] = useState(userProfile.name);
-  const [location, setLocation] = useState(userProfile.location);
-
-  if (!isOpen) return null;
-
-  const handleSave = () => {
-    setUserProfile(prev => ({
-      ...prev,
-      name: name.trim(),
-      location: location.trim()
-    }));
-    onClose();
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
-      <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 border border-indigo-100">
-        <div className="flex justify-between items-center border-b pb-3">
-          <div className="flex items-center space-x-2 text-indigo-700 font-bold">
-            <Sliders className="w-5 h-5" />
-            <span>Hyper-Personalization Settings</span>
-          </div>
-          <button onClick={onClose} className="p-1.5 text-gray-400 hover:text-gray-600 bg-gray-100 rounded-full">
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-
-        <p className="text-xs text-gray-500">
-          Customize your profile details so practice cards, transcripts, and downloadable certificates reflect your exact name and location.
-        </p>
-
-        <div className="space-y-3">
-          <div>
-            <label className="text-xs font-bold uppercase tracking-wider text-gray-700 block mb-1 flex items-center gap-1">
-              <User className="w-3.5 h-3.5 text-indigo-500" /> Your Preferred Name
-            </label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Alex (optional)"
-              className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-            />
-          </div>
-
-          <div>
-            <label className="text-xs font-bold uppercase tracking-wider text-gray-700 block mb-1 flex items-center gap-1">
-              <MapPin className="w-3.5 h-3.5 text-indigo-500" /> Current City / Location Stamp
-            </label>
-            <input
-              type="text"
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              placeholder="e.g. Honolulu, HI (optional)"
-              className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-            />
-          </div>
-        </div>
-
-        <div className="pt-2 flex flex-col gap-2">
-          <div className="flex space-x-2">
-            <button
-              onClick={onClose}
-              className="flex-1 py-2.5 bg-gray-100 text-gray-700 font-semibold rounded-xl text-xs hover:bg-gray-200 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleSave}
-              className="flex-1 py-2.5 bg-indigo-600 text-white font-semibold rounded-xl text-xs hover:bg-indigo-700 transition-colors shadow-md"
-            >
-              Save Personal Details
-            </button>
-          </div>
-
-          <button
-            onClick={() => { onClose(); onOpenSettings(); }}
-            className="w-full py-2 bg-indigo-50 border border-indigo-200 text-indigo-700 font-semibold rounded-xl text-xs hover:bg-indigo-100 transition-colors flex items-center justify-center gap-1.5"
-          >
-            <Key className="w-4 h-4 text-amber-500" /> Configure Google Gemini API Key
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// --- API KEY MODAL ---
-const ApiKeyModal = ({ isOpen, onClose }) => {
-  const [key, setKey] = useState(getStoredApiKey());
-
-  if (!isOpen) return null;
-
-  const handleSaveKey = () => {
-    localStorage.setItem('EMPATHY_AI_API_KEY', key.trim());
-    alert("Google Gemini API Key saved to browser local storage.");
-    onClose();
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
-      <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 border border-indigo-100">
-        <div className="flex justify-between items-center border-b pb-3">
-          <div className="flex items-center space-x-2 text-indigo-700 font-bold">
-            <Key className="w-5 h-5 text-amber-500" />
-            <span>AI Neural API Key Setup</span>
-          </div>
-          <button onClick={onClose} className="p-1.5 text-gray-400 hover:text-gray-600 bg-gray-100 rounded-full">
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-
-        <p className="text-xs text-gray-500">
-          Configure your Google Gemini API key for live neural TTS voice audio & real-time empathetic coaching (supports gemini-2.5-flash-preview-09-2025). If no key is provided, the application runs in local offline mode.
-        </p>
-
-        <div>
-          <label className="text-xs font-bold uppercase tracking-wider text-gray-700 block mb-1">
-            Gemini API Key String
-          </label>
-          <input
-            type="password"
-            value={key}
-            onChange={(e) => setKey(e.target.value)}
-            placeholder="AIzaSy..."
-            className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-mono focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-          />
-        </div>
-
-        <div className="flex space-x-2 pt-2">
-          <button
-            onClick={onClose}
-            className="flex-1 py-2.5 bg-gray-100 text-gray-700 font-semibold rounded-xl text-xs hover:bg-gray-200 transition-colors"
-          >
-            Close
-          </button>
-          <button
-            onClick={handleSaveKey}
-            className="flex-1 py-2.5 bg-indigo-600 text-white font-semibold rounded-xl text-xs hover:bg-indigo-700 transition-colors shadow-md"
-          >
-            Save Key
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// --- HEADER ---
-const Header = ({ setSessionState, sessionState, userProfile, setUserProfile, onOpenSettings, onTriggerGumroad }) => {
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
-
-  return (
-    <header className="bg-white shadow-sm p-4 flex items-center justify-between flex-shrink-0 border-b border-gray-100">
-      <div className="flex items-center space-x-3">
-        <div className="p-2.5 bg-indigo-50 rounded-2xl text-indigo-600 shadow-sm">
-          <Heart className="w-7 h-7 text-indigo-600" />
-        </div>
-        <div>
-          <h1 className="text-lg md:text-xl font-bold text-gray-800 flex items-center gap-2 font-sans">
-            Empathy Assistant
-            <span className="text-[10px] uppercase font-extrabold bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-2.5 py-0.5 rounded-full shadow-sm">
-              Studio $9.99
-            </span>
-          </h1>
-          <div className="flex items-center space-x-3 text-xs text-gray-500 mt-0.5">
-            {userProfile.name ? (
-              <span className="flex items-center gap-1 text-indigo-700 font-medium">
-                <User className="w-3.5 h-3.5" /> {userProfile.name}
-              </span>
-            ) : (
-              <button onClick={() => setIsProfileOpen(true)} className="text-indigo-600 hover:underline text-xs">
-                + Add Name
-              </button>
-            )}
-            {userProfile.location && (
-              <span className="flex items-center gap-1">
-                <MapPin className="w-3.5 h-3.5 text-gray-400" /> {userProfile.location}
-              </span>
-            )}
-            <span className="hidden sm:flex items-center gap-1">
-              <Clock className="w-3.5 h-3.5 text-gray-400" /> {userProfile.timeOfDay}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      <div className="flex items-center space-x-2">
-        <button
-          onClick={onTriggerGumroad}
-          className="px-3.5 py-2 bg-gradient-to-r from-amber-500 to-amber-600 text-black font-extrabold rounded-xl transition-all text-xs flex items-center gap-1.5 shadow-md hover:brightness-110"
-          title="Buy Empathy Assistant Studio on Gumroad ($9.99)"
-        >
-          <ShoppingBag className="w-4 h-4 text-black" />
-          <span className="hidden sm:inline">Gumroad Pass $9.99</span>
-        </button>
-
-        <button
-          onClick={() => setIsProfileOpen(true)}
-          className="p-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl transition-all text-xs font-semibold flex items-center gap-1.5 border border-indigo-100"
-          title="Customize Profile & Location"
-        >
-          <Sliders className="w-4 h-4 text-indigo-600" />
-          <span className="hidden md:inline">Settings</span>
-        </button>
-
-        {sessionState === 'active' && (
-          <button
-            onClick={() => setSessionState('ending')}
-            className="flex items-center space-x-1.5 px-4 py-2 bg-gradient-to-r from-red-500 to-rose-600 text-white font-semibold rounded-xl shadow-md transition-all hover:opacity-95 text-xs"
-          >
-            <span>End Session</span>
-          </button>
-        )}
-      </div>
-
-      <UserProfileModal
-        isOpen={isProfileOpen}
-        onClose={() => setIsProfileOpen(false)}
-        userProfile={userProfile}
-        setUserProfile={setUserProfile}
-        onOpenSettings={onOpenSettings}
-      />
-    </header>
-  );
-};
-
-const LoadingIndicator = ({ text = "Thinking..." }) => (
-  <div className="flex items-start gap-4 my-2">
-    <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-md">
-      <Sparkles className="w-6 h-6 animate-pulse" />
-    </div>
-    <div className="px-5 py-3.5 rounded-2xl bg-white border border-indigo-100 text-gray-800 rounded-bl-none shadow-sm">
-      <div className="flex items-center space-x-2">
-        <span className="font-medium text-sm text-indigo-900">{text}</span>
-        <div className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce"></div>
-        <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce [animation-delay:0.15s]"></div>
-        <div className="w-2 h-2 bg-pink-500 rounded-full animate-bounce [animation-delay:0.3s]"></div>
-      </div>
-    </div>
-  </div>
-);
-
-// --- CONVERSATION PANEL ---
-const ConversationPanel = ({ conversation, isLoading, onTriggerBreak, userProfile }) => {
-  const conversationEndRef = useRef(null);
-  useEffect(() => {
-    conversationEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [conversation]);
-
-  return (
-    <div className="flex-[2] flex flex-col bg-white rounded-2xl shadow-lg h-full min-h-[40vh] md:min-h-0 border border-gray-100">
-      <div className="p-3.5 border-b flex justify-between items-center bg-gradient-to-r from-indigo-50/50 via-purple-50/30 to-white rounded-t-2xl">
-        <div className="flex items-center space-x-2">
-          <span className="text-xs font-bold text-indigo-700 uppercase tracking-wider flex items-center gap-1.5">
-            <Sparkles className="w-4 h-4 text-indigo-500" /> Interactive Roleplay Dialogue
-          </span>
-          <span className="text-[10px] text-gray-400 border-l pl-2 font-mono hidden sm:inline">
-            {userProfile.location ? `${userProfile.location} • ` : ''}{userProfile.currentDate}
-          </span>
-        </div>
-        <button
-          onClick={onTriggerBreak}
-          className="text-xs text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-full font-medium transition-all flex items-center gap-1.5 shadow-sm border border-indigo-200/60"
-          title="Insert a personalized mindful break card into the chat"
-        >
-          <Wind className="w-3.5 h-3.5 text-teal-600" /> Mindful Reset Card
-        </button>
-      </div>
-
-      <div className="flex-1 p-4 md:p-6 overflow-y-auto custom-scrollbar">
-        <div className="space-y-4">
-          {conversation.map((entry, index) => {
-            if (entry.isInterjection) {
-              return <InterjectionCard key={index} item={entry.interjectionData} />;
-            }
-
-            return (
-              <div key={index} className={`flex items-start gap-3 ${entry.speaker === 'user' ? 'justify-end' : ''}`}>
-                {entry.speaker === 'bot' && (
-                  <div className="flex-shrink-0 w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center shadow-md">
-                    <Heart className="w-5 h-5 text-white" />
-                  </div>
-                )}
-                <div className={`relative px-4 py-3 rounded-2xl max-w-[82%] md:max-w-lg break-words text-sm md:text-base shadow-sm ${entry.speaker === 'user' ? 'bg-gradient-to-r from-indigo-600 to-blue-600 text-white rounded-br-none' : 'bg-gray-50 border border-gray-200/80 text-gray-800 rounded-bl-none'}`}>
-                  <p className="leading-relaxed">{entry.text}</p>
-                  {entry.speaker === 'bot' && (
-                    <button
-                      onClick={() => generateAndPlayTTS(entry.text)}
-                      title="Listen to voice"
-                      className="absolute -bottom-3 right-2 bg-white border border-indigo-100 text-indigo-600 p-1.5 rounded-full shadow-md hover:bg-indigo-50 transition-all hover:scale-110"
-                    >
-                      <Volume2 className="w-3.5 h-3.5 text-indigo-600" />
-                    </button>
-                  )}
-                </div>
-                {entry.speaker === 'user' && (
-                  <div className="flex-shrink-0 w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-500 to-cyan-500 flex items-center justify-center shadow-md text-white font-bold text-xs">
-                    {userProfile.name ? userProfile.name.charAt(0).toUpperCase() : <User className="w-4 h-4" />}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-          {isLoading && <LoadingIndicator text="Empathy Assistant is formulating empathetic response & audio..." />}
-          <div ref={conversationEndRef} />
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// --- FEEDBACK PANEL ---
-const FeedbackPanel = ({ feedback, activeScenario, onSelectScenario, userProfile }) => {
-  const scenarios = [
-    {
-      title: "Setting a healthy boundary with a demanding coworker",
-      focus: "Assertiveness & Clarity without Aggression",
-      objectives: ["State needs clearly", "Maintain calm firmness", "Offer realistic alternatives"]
-    },
-    {
-      title: "Apologizing sincerely to a close friend for a misunderstanding",
-      focus: "Accountability & Empathy without Defensiveness",
-      objectives: ["Acknowledge impact over intention", "Validate friend's emotions", "Offer concrete rebuild steps"]
-    },
-    {
-      title: "Expressing vulnerability to a partner about feeling overwhelmed",
-      focus: "Self-Awareness & Connection",
-      objectives: ["Use 'I feel' statements", "Avoid blame patterns", "Invite shared problem solving"]
-    },
-    {
-      title: "Giving constructive feedback without sounding critical",
-      focus: "Softening Tone & Outcome Focus",
-      objectives: ["Highlight strengths first", "Address behavior not identity", "Ask open ended questions"]
-    }
-  ];
-
-  return (
-    <div className="flex-1 flex flex-col bg-white rounded-2xl shadow-lg p-4 md:p-6 space-y-4 min-h-[40vh] md:min-h-0 overflow-y-auto custom-scrollbar border border-gray-100">
-      <h2 className="text-lg font-bold text-gray-800 border-b pb-2 flex items-center justify-between">
-        <span className="flex items-center gap-2">
-          <Target className="w-5 h-5 text-indigo-600" />
-          Real-Time Guidance
-        </span>
-        {activeScenario && <span className="text-[11px] bg-indigo-100 text-indigo-800 px-2.5 py-0.5 rounded-full font-semibold">Active Practice</span>}
-      </h2>
-
-      <div className="text-[11px] bg-indigo-50/60 p-2 rounded-xl text-indigo-900 flex justify-between items-center border border-indigo-100">
-        <span className="font-semibold">Context: {userProfile.name ? userProfile.name : 'User'}{userProfile.location ? ` in ${userProfile.location}` : ''}</span>
-        <span className="text-indigo-600">{userProfile.timeOfDay}</span>
-      </div>
-
-      {activeScenario && (
-        <div className="p-3.5 bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl border border-indigo-100 shadow-sm">
-          <div className="flex items-center space-x-2 text-indigo-800 font-bold text-xs uppercase tracking-wide mb-1">
-            <Target className="w-4 h-4 text-indigo-600" />
-            <span>Active Practice Target</span>
-          </div>
-          <p className="text-xs font-semibold text-gray-800 mb-1">{activeScenario.title}</p>
-          <p className="text-xs text-indigo-600 mb-2 font-medium">Focus: {activeScenario.focus}</p>
-          <ul className="text-xs text-gray-600 space-y-1">
-            {activeScenario.objectives.map((obj, i) => (
-              <li key={i} className="flex items-center">
-                <span className="w-1.5 h-1.5 bg-indigo-400 rounded-full mr-1.5"></span>
-                {obj}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {feedback.suggestions && feedback.suggestions.length > 0 ? (
-        <div className="space-y-3">
-          <h3 className="font-semibold text-sm text-indigo-700 flex items-center gap-1.5">
-            <Smile className="w-4 h-4 text-indigo-500" /> {feedback.title}
-          </h3>
-          <ul className="space-y-2">
-            {feedback.suggestions.map((suggestion, index) => (
-              <li key={index} className="flex items-start text-xs md:text-sm bg-indigo-50/40 p-2.5 rounded-xl border border-indigo-100/60">
-                <Check className="w-4 h-4 text-emerald-500 mr-2 mt-0.5 flex-shrink-0" />
-                <span className="text-gray-700">{suggestion}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      ) : (
-        <div className="text-center text-gray-500 py-6 flex flex-col justify-center items-center bg-gray-50/50 rounded-xl border border-dashed border-gray-200">
-           <Heart className="mx-auto text-indigo-300 animate-bounce text-3xl" />
-           <p className="mt-2 text-xs px-4">Tailored communication tips will populate here in real-time as you chat.</p>
-        </div>
-      )}
-
-      <div className="mt-4 border-t pt-4">
-        <h3 className="font-bold text-gray-700 text-sm mb-1.5 flex items-center">
-          <Sparkles className="w-4 h-4 mr-1.5 text-indigo-500" /> Practice Scenarios
-        </h3>
-        <p className="text-xs text-gray-500 mb-3">Select a scenario to target live AI coaching:</p>
-        <div className="space-y-2">
-          {scenarios.map((scen, idx) => {
-            const isSelected = activeScenario?.title === scen.title;
-            return (
-              <button
-                key={idx}
-                onClick={() => onSelectScenario(scen)}
-                className={`w-full text-left text-xs p-2.5 rounded-xl border transition-all font-medium flex flex-col gap-1 ${
-                  isSelected
-                    ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white border-indigo-600 shadow-md scale-[1.01]'
-                    : 'bg-indigo-50/50 hover:bg-indigo-100/80 text-indigo-900 border-indigo-100'
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold">{scen.title}</span>
-                  <span>{isSelected ? '✓' : '→'}</span>
-                </div>
-                <span className={`text-[10px] ${isSelected ? 'text-indigo-100' : 'text-indigo-600'}`}>
-                  Focus: {scen.focus}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// --- MESSAGE INPUT ---
-const MessageInput = ({ userInput, setUserInput, handleSendMessage, toggleRecording, isRecording, isLoading, setSessionState, userProfile }) => (
-  <div className="p-4 bg-white rounded-2xl shadow-lg mt-4 flex flex-col gap-2 border border-gray-100">
-    <div className="flex items-center space-x-2">
-      <textarea
-        value={userInput}
-        onChange={(e) => setUserInput(e.target.value)}
-        onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
-        placeholder={`Type your response${userProfile.name ? `, ${userProfile.name}` : ''}, or click mic to speak...`}
-        className="flex-1 p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-none resize-none text-sm transition-all"
-        rows="2"
-        disabled={isLoading}
-      />
-      <button
-        onClick={toggleRecording}
-        className={`p-3 rounded-xl transition-all ${isRecording ? 'bg-red-500 text-white animate-pulse shadow-lg scale-105' : 'bg-gray-100 text-gray-600 hover:bg-indigo-50 hover:text-indigo-600'}`}
-        disabled={isLoading}
-        title="Voice input"
-      >
-        {isRecording ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
-      </button>
-      <button
-        onClick={handleSendMessage}
-        disabled={isLoading || !userInput.trim()}
-        className="p-3.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:opacity-95 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md transform active:scale-95"
-        title="Send message"
-      >
-        <Send className="w-5 h-5" />
-      </button>
-    </div>
-    <button
-      onClick={() => setSessionState('ending')}
-      className="md:hidden w-full py-2 bg-red-500 text-white font-semibold rounded-xl shadow-lg transition-all mt-2 hover:bg-red-600 text-xs"
-    >
-      End Session & Review
-    </button>
-  </div>
-);
-
-// --- SHARE MODAL WITH ONE-CLICK SOCIAL SHARING ---
-const ShareModal = ({ isOpen, onClose, sessionData, userProfile, userQuote, onTriggerGumroad }) => {
-  const [copied, setCopied] = useState(false);
-
-  if (!isOpen || !sessionData) return null;
-
-  const formattedShareText = `🌟 EMPATHY ASSISTANT INSIGHT CERTIFICATE 🌟
-
-Practitioner: ${userProfile.name || "Anonymous"}
-${userProfile.location ? `Location: ${userProfile.location}\n` : ''}Date & Time: ${userProfile.currentDate} at ${userProfile.currentTime} (${userProfile.timeOfDay})
-
-Core Theme: ${sessionData.emotionalCore || "Reflective Exploration"}
-User Quote Highlight: "${userQuote || "I am practicing clear, honest communication."}"
-Breakthrough Insight: ${sessionData.breakthroughMoment || "Deeper awareness gained through practice."}
-
-💡 Tailored Key Tips:
-${sessionData.eaTips ? sessionData.eaTips.map((tip, i) => `${i + 1}. ${tip}`).join('\n') : "1. Practice active listening with heart."}
-
-✨ Strengths Unlocked: ${sessionData.treasuredGrowth ? sessionData.treasuredGrowth.join(', ') : "Vulnerability, Self-Compassion"}
-
-Generated via Empathy Assistant Studio`;
-
-  const handleCopyText = async () => {
-    const success = await safeCopyToClipboard(formattedShareText);
-    if (success) {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2500);
-    }
-  };
-
-  const handleShareTwitter = () => {
-    const tweet = `Practicing mindful empathy & emotional clarity with Empathy Assistant Studio! 🌟 core theme: "${sessionData.emotionalCore}"`;
-    window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(tweet)}`, '_blank');
-  };
-
-  const handleShareLinkedIn = () => {
-    const title = `Empathy Insight Certificate - ${sessionData.emotionalCore}`;
-    window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(window.location.href)}`, '_blank');
-  };
-
-  const handleShareFacebook = () => {
-    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`, '_blank');
-  };
-
-  const handleNativeShare = async () => {
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: `Empathy Practice Card${userProfile.name ? ` - ${userProfile.name}` : ''}`,
-          text: formattedShareText
-        });
-      } catch (err) {
-        console.log('Share canceled or failed', err);
-      }
-    } else {
-      handleCopyText();
-    }
-  };
-
-  const handleExportHTMLCard = () => {
-    const htmlContent = `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Empathy Session Insight Card</title>
-    <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f3f4f6; padding: 40px; display: flex; justify-content: center; }
-        .card { background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); color: white; border-radius: 24px; padding: 36px; max-width: 580px; box-shadow: 0 20px 40px rgba(0,0,0,0.2); position: relative; }
-        .header-meta { font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; opacity: 0.85; margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 8px; display: flex; justify-content: space-between; }
-        .badge { background: rgba(255,255,255,0.25); backdrop-filter: blur(8px); padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: bold; letter-spacing: 1px; text-transform: uppercase; display: inline-block; margin-bottom: 12px; }
-        h1 { margin-top: 5px; font-size: 24px; line-height: 1.2; }
-        .quote-box { background: rgba(0,0,0,0.2); padding: 14px 18px; border-radius: 12px; font-style: italic; border-left: 4px solid #f472b6; margin: 16px 0; font-size: 14px; }
-        .section { background: rgba(255,255,255,0.12); padding: 18px; border-radius: 16px; margin: 16px 0; border: 1px solid rgba(255,255,255,0.2); }
-        .section-title { font-weight: bold; text-transform: uppercase; font-size: 11px; opacity: 0.85; letter-spacing: 1px; }
-        ul { padding-left: 20px; margin: 8px 0 0 0; }
-        li { margin-bottom: 6px; font-size: 14px; }
-        .footer { text-align: center; font-size: 12px; opacity: 0.8; margin-top: 24px; }
-    </style>
-</head>
-<body>
-    <div class="card">
-        <div class="header-meta">
-            ${userProfile.location ? `<span>📍 ${userProfile.location}</span>` : '<span>✨ Empathy Session</span>'}
-            <span>📅 ${userProfile.currentDate} • ${userProfile.currentTime}</span>
-        </div>
-        <span class="badge">Bespoke Empathy Insight Card${userProfile.name ? ` for ${userProfile.name}` : ''}</span>
-        <h1>${sessionData.emotionalCore || "Empathetic Session Review"}</h1>
-
-        <div class="quote-box">
-            "${userQuote || "I am honoring my communication journey."}"
-            <div style="font-size: 11px; font-style: normal; margin-top: 4px; opacity: 0.8;">— ${userProfile.name || "Practitioner"} (${userProfile.timeOfDay})</div>
-        </div>
-
-        <div class="section">
-            <div class="section-title">Breakthrough Moment</div>
-            <p style="margin: 6px 0 0 0; font-size: 15px; font-style: italic;">"${sessionData.breakthroughMoment || "Greater emotional clarity achieved."}"</p>
-        </div>
-
-        <div class="section">
-            <div class="section-title">Empathy Assistant Insights</div>
-            <ul>
-                ${sessionData.eaTips ? sessionData.eaTips.map(t => `<li>${t}</li>`).join('') : '<li>Practice gentle self-compassion.</li>'}
-            </ul>
-        </div>
-
-        <div class="section">
-            <div class="section-title">Strengths Unlocked</div>
-            <p style="margin: 6px 0 0 0; font-weight: bold;">${sessionData.treasuredGrowth ? sessionData.treasuredGrowth.join(' • ') : "Clarity, Presence"}</p>
-        </div>
-
-        <div class="footer">✨ Created with Empathy Assistant Studio ${userProfile.location ? `• ${userProfile.location}` : ''} ✨</div>
-    </div>
-</body>
-</html>`;
-    downloadFile(`Empathy_Insight_Card_${Date.now()}.html`, htmlContent, 'text/html');
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
-      <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-5 relative overflow-hidden border border-indigo-100 max-h-[90vh] overflow-y-auto custom-scrollbar">
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors"
-        >
-          <X className="w-5 h-5" />
-        </button>
-
-        <div className="flex items-center space-x-2 text-indigo-600 font-bold">
-          <Share2 className="w-6 h-6" />
-          <span className="text-xl">Bespoke Session Insight Card</span>
-        </div>
-
-        {/* Styled Preview Card */}
-        <div className="p-5 rounded-2xl bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 text-white shadow-xl space-y-3 relative overflow-hidden border border-white/10">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
-
-          <div className="flex justify-between items-center text-[10px] uppercase font-mono tracking-wider text-indigo-100 border-b border-white/15 pb-2">
-            {userProfile.location ? <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {userProfile.location}</span> : <span>Empathy Session</span>}
-            <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> {userProfile.currentDate}</span>
-          </div>
-
-          <div className="flex justify-between items-center pt-1">
-            <span className="text-[10px] uppercase font-extrabold tracking-widest bg-white/20 px-3 py-1 rounded-full backdrop-blur-md">
-              {userProfile.name ? `Card for ${userProfile.name}` : 'Empathy Insight Card'}
-            </span>
-            <Heart className="w-5 h-5 text-pink-200" />
-          </div>
-
-          <h3 className="text-lg font-bold leading-snug">{sessionData.emotionalCore || "Emotional Reflection"}</h3>
-
-          {userQuote && (
-            <div className="bg-black/25 p-3 rounded-xl border-l-4 border-pink-400 text-xs italic text-pink-100">
-              "{userQuote}"
-              {userProfile.name && <span className="block text-[10px] font-sans not-italic text-indigo-200 mt-1">— Direct Quote from {userProfile.name}</span>}
-            </div>
-          )}
-
-          <div className="bg-white/10 backdrop-blur-md p-3 rounded-xl border border-white/15 text-xs italic">
-            "{sessionData.breakthroughMoment}"
-          </div>
-
-          <div className="space-y-1">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-200">Personalized Insights:</span>
-            <ul className="text-xs space-y-1 list-disc list-inside text-indigo-50">
-              {sessionData.eaTips?.slice(0, 2).map((tip, idx) => (
-                <li key={idx}>{tip}</li>
-              ))}
-            </ul>
-          </div>
-
-          <div className="pt-2 border-t border-white/20 flex justify-between items-center text-[10px] text-indigo-100 font-medium">
-            <span>Stamp: {userProfile.timeOfDay} Practice</span>
-            <span>{userProfile.currentTime}</span>
-          </div>
-        </div>
-
-        {/* Social Sharing Buttons */}
-        <div className="space-y-2">
-          <span className="text-xs font-bold text-gray-700 block">One-Click Social Share:</span>
-          <div className="grid grid-cols-3 gap-2">
-            <button
-              onClick={handleShareTwitter}
-              className="py-2 px-3 bg-sky-500 hover:bg-sky-600 text-white font-bold rounded-xl text-xs transition-colors shadow-sm flex items-center justify-center gap-1"
-            >
-              <span>X / Twitter</span>
-            </button>
-            <button
-              onClick={handleShareLinkedIn}
-              className="py-2 px-3 bg-blue-700 hover:bg-blue-800 text-white font-bold rounded-xl text-xs transition-colors shadow-sm flex items-center justify-center gap-1"
-            >
-              <span>LinkedIn</span>
-            </button>
-            <button
-              onClick={handleShareFacebook}
-              className="py-2 px-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs transition-colors shadow-sm flex items-center justify-center gap-1"
-            >
-              <span>Facebook</span>
-            </button>
-          </div>
-        </div>
-
-        {/* General Actions */}
-        <div className="grid grid-cols-2 gap-3 pt-1">
-          <button
-            onClick={handleCopyText}
-            className="flex items-center justify-center space-x-2 p-3 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-xl font-semibold text-xs transition-colors border border-indigo-200"
-          >
-            {copied ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
-            <span>{copied ? 'Copied Text!' : 'Copy Card Text'}</span>
-          </button>
-
-          <button
-            onClick={handleNativeShare}
-            className="flex items-center justify-center space-x-2 p-3 bg-indigo-600 text-white hover:bg-indigo-700 rounded-xl font-semibold text-xs transition-colors shadow-md"
-          >
-            <Share2 className="w-4 h-4" />
-            <span>System Share</span>
-          </button>
-        </div>
-
-        <button
-          onClick={handleExportHTMLCard}
-          className="w-full flex items-center justify-center space-x-2 p-2.5 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-xl font-semibold text-xs shadow hover:opacity-95 transition-all"
-        >
-          <Download className="w-4 h-4" />
-          <span>Download Interactive HTML Insight Card</span>
-        </button>
-
-        <button
-          onClick={onTriggerGumroad}
-          className="w-full flex items-center justify-center space-x-2 p-3 bg-gradient-to-r from-amber-500 to-amber-600 text-black font-extrabold rounded-xl text-xs shadow-lg hover:brightness-110 transition-all"
-        >
-          <ShoppingBag className="w-4 h-4 text-black" />
-          <span>Buy Empathy Assistant Studio ($9.99)</span>
-        </button>
-      </div>
-    </div>
-  );
-};
-
-// --- SESSION SUMMARY PANEL ---
-const SessionSummaryPanel = ({ sessionSummaryData, handleJournal, setSessionState, conversation, isLoading, userProfile, onTriggerGumroad }) => {
-  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
-
-  const userMessages = conversation.filter(m => m.speaker === 'user' && !m.isInterjection);
-  const userQuote = userMessages.length > 0 ? userMessages[userMessages.length - 1].text : "I am taking time for intentional empathy.";
-
-  const handleDownloadTranscript = () => {
-    let content = `=================================================\n`;
-    content += ` EMPATHY ASSISTANT - HYPER-PERSONAL TRANSCRIPT\n`;
-    if (userProfile.name) content += ` Practitioner: ${userProfile.name}\n`;
-    if (userProfile.location) content += ` Location Stamp: ${userProfile.location}\n`;
-    content += ` Date & Time: ${userProfile.currentDate} at ${userProfile.currentTime} (${userProfile.timeOfDay})\n`;
-    content += `=================================================\n\n`;
-
-    conversation.forEach((msg) => {
-      if (msg.isInterjection) {
-        content += `--- [Personal Mindful Card: ${msg.interjectionData.title}] ---\n\n`;
-      } else {
-        const speakerLabel = msg.speaker === 'user' ? (userProfile.name ? userProfile.name.toUpperCase() : 'USER') : 'EMPATHY ASSISTANT';
-        content += `[${speakerLabel}]:\n${msg.text}\n\n`;
-      }
-    });
-
-    downloadFile(`Empathy_Transcript_${Date.now()}.txt`, content);
-  };
-
-  const handleDownloadHTMLReport = () => {
-    if (!sessionSummaryData) return;
-
-    const htmlContent = `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Empathy Session Review Report</title>
-    <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f8fafc; color: #1e293b; line-height: 1.6; padding: 40px; }
-        .container { max-width: 800px; margin: 0 auto; background: white; border-radius: 24px; padding: 40px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); border: 1px solid #e2e8f0; }
-        .meta-seal { background: #e0e7ff; color: #3730a3; padding: 10px 16px; border-radius: 12px; font-size: 12px; font-weight: bold; margin-bottom: 20px; display: flex; justify-content: space-between; }
-        .header { border-bottom: 2px solid #e2e8f0; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center; }
-        .logo { font-size: 24px; font-weight: 800; color: #4f46e5; }
-        .card { background: #f1f5f9; border-radius: 16px; padding: 24px; margin-bottom: 24px; }
-        .quote-callout { background: #fce7f3; border-left: 5px solid #ec4899; padding: 16px; border-radius: 8px; margin-bottom: 20px; font-style: italic; color: #831843; }
-        .highlight-box { background: linear-gradient(135deg, #e0e7ff 0%, #fae8ff 100%); border-left: 6px solid #6366f1; padding: 20px; border-radius: 12px; margin-bottom: 24px; }
-        h2 { font-size: 18px; color: #334155; margin-top: 0; border-bottom: 1px solid #cbd5e1; padding-bottom: 8px; }
-        ul { padding-left: 20px; }
-        li { margin-bottom: 8px; }
-        .footer { text-align: center; color: #94a3b8; font-size: 13px; margin-top: 40px; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="meta-seal">
-            ${userProfile.name ? `<span>👤 Practitioner: ${userProfile.name}</span>` : '<span>👤 Practitioner</span>'}
-            ${userProfile.location ? `<span>📍 ${userProfile.location}</span>` : ''}
-            <span>📅 ${userProfile.currentDate}</span>
-        </div>
-
-        <div class="header">
-            <div class="logo">Empathy Assistant Studio</div>
-            <div style="color: #64748b; font-size: 14px;">${userProfile.currentTime} (${userProfile.timeOfDay})</div>
-        </div>
-
-        <div class="quote-callout">
-            "${userQuote}"
-            <div style="font-size: 12px; font-style: normal; font-weight: bold; margin-top: 4px; color: #9d174d;">— Direct Voice Quote</div>
-        </div>
-
-        <div class="highlight-box">
-            <h1 style="margin:0 0 8px 0; font-size: 22px; color: #312e81;">${sessionSummaryData.emotionalCore || "Session Core"}</h1>
-            <p style="margin: 0; font-size: 16px; font-style: italic; color: #4338ca;">"${sessionSummaryData.breakthroughMoment}"</p>
-        </div>
-
-        <div class="card">
-            <h2>✨ Personalized Takeaway</h2>
-            <p>${sessionSummaryData.keyTakeaway}</p>
-        </div>
-
-        <div class="card">
-            <h2>💡 Specific EA Coaching Advice</h2>
-            <ul>
-                ${sessionSummaryData.eaTips ? sessionSummaryData.eaTips.map(tip => `<li><strong>Tip:</strong> ${tip}</li>`).join('') : ''}
-            </ul>
-        </div>
-
-        <div class="card">
-            <h2>🎁 Strengths Unlocked</h2>
-            <p><strong>Identified Strengths:</strong> ${sessionSummaryData.treasuredGrowth ? sessionSummaryData.treasuredGrowth.join(', ') : 'Vulnerability, Self-Awareness'}</p>
-        </div>
-
-        <div class="footer">
-            Generated with Empathy Assistant AI Studio
-        </div>
-    </div>
-</body>
-</html>`;
-
-    downloadFile(`Empathy_Session_Report_${Date.now()}.html`, htmlContent, 'text/html');
-  };
-
-  return (
-    <div className="flex-1 flex flex-col bg-white rounded-3xl shadow-xl p-6 md:p-8 space-y-6 max-w-4xl w-full mx-auto my-auto min-h-[80vh] border border-gray-100">
-      <div className="p-3.5 rounded-2xl bg-indigo-50 border border-indigo-100 flex flex-wrap justify-between items-center text-xs text-indigo-900 font-semibold gap-2">
-        {userProfile.name && <span className="flex items-center gap-1.5"><User className="w-4 h-4 text-indigo-600" /> Session for: {userProfile.name}</span>}
-        {userProfile.location && <span className="flex items-center gap-1.5"><MapPin className="w-4 h-4 text-indigo-600" /> Location: {userProfile.location}</span>}
-        <span className="flex items-center gap-1.5"><Calendar className="w-4 h-4 text-indigo-600" /> {userProfile.currentDate} ({userProfile.timeOfDay})</span>
-      </div>
-
-      <div className="flex justify-between items-center border-b pb-4 flex-wrap gap-2">
-        <div>
-          <h2 className="text-2xl md:text-3xl font-extrabold text-indigo-900 flex items-center gap-2">
-            <Trophy className="w-8 h-8 text-indigo-600" />
-            Highlights & Session Review
-          </h2>
-          <p className="text-xs md:text-sm text-gray-500 mt-1">Personalized milestones extracted from your practice session.</p>
-        </div>
-        <button
-          onClick={() => setIsShareModalOpen(true)}
-          className="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl font-bold text-xs shadow-md hover:opacity-95 transition-all flex items-center gap-2"
-        >
-          <Share2 className="w-4 h-4" /> Share Insight Card
-        </button>
-      </div>
-
-      {isLoading ? (
-        <LoadingIndicator text="EA is analyzing dialogue themes & extracting bespoke insights..." />
-      ) : sessionSummaryData ? (
-        <div className="space-y-6 flex-1">
-          {userQuote && (
-            <div className="p-4 rounded-2xl bg-pink-50 border border-pink-200 text-pink-950 flex items-start space-x-3 shadow-sm">
-              <Sparkles className="w-6 h-6 text-pink-500 flex-shrink-0 mt-0.5" />
-              <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-pink-700 block mb-0.5">Key Expression:</span>
-                <p className="text-xs md:text-sm italic font-serif">"{userQuote}"</p>
-              </div>
-            </div>
-          )}
-
-          <div className="p-6 rounded-2xl bg-gradient-to-br from-indigo-500 via-purple-600 to-indigo-700 text-white shadow-xl relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full blur-3xl pointer-events-none"></div>
-            <div className="flex items-center space-x-2 text-xs font-bold uppercase tracking-widest text-indigo-200 mb-2">
-              <Heart className="w-4 h-4 text-pink-300" />
-              <span>Breakthrough Core</span>
-            </div>
-            <h3 className="text-xl md:text-2xl font-bold mb-2">{sessionSummaryData.emotionalCore}</h3>
-            <p className="text-sm md:text-base italic text-indigo-100 bg-black/20 p-3 rounded-xl border border-white/10">
-              "{sessionSummaryData.breakthroughMoment}"
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="p-5 rounded-2xl bg-indigo-50/60 border border-indigo-100 space-y-2">
-              <h4 className="font-bold text-sm text-indigo-900 flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-indigo-600" />
-                Key Communication Takeaway
-              </h4>
-              <p className="text-xs md:text-sm text-gray-700 leading-relaxed">
-                {sessionSummaryData.keyTakeaway}
-              </p>
-            </div>
-
-            <div className="p-5 rounded-2xl bg-purple-50/60 border border-purple-100 space-y-2">
-              <h4 className="font-bold text-sm text-purple-900 flex items-center gap-2">
-                <Target className="w-4 h-4 text-purple-600" />
-                Tailored Tips
-              </h4>
-              <ul className="text-xs md:text-sm text-gray-700 space-y-1.5 list-disc list-inside">
-                {sessionSummaryData.eaTips?.map((tip, idx) => (
-                  <li key={idx} className="leading-snug">{tip}</li>
-                ))}
-              </ul>
-            </div>
-          </div>
-
-          <div className="p-5 rounded-2xl bg-emerald-50/50 border border-emerald-100 space-y-3">
-            <h4 className="font-bold text-sm text-emerald-900 flex items-center gap-2">
-              <Trophy className="w-4 h-4 text-emerald-600" />
-              Strengths Discovered
-            </h4>
-            <div className="flex flex-wrap gap-2">
-              {sessionSummaryData.treasuredGrowth?.map((strength, i) => (
-                <span key={i} className="px-3 py-1 bg-white border border-emerald-200 text-emerald-800 rounded-full text-xs font-semibold shadow-sm flex items-center gap-1.5">
-                  <Check className="w-3.5 h-3.5 text-emerald-500" />
-                  {strength}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          <div className="pt-4 border-t grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <button
-              onClick={handleDownloadTranscript}
-              className="flex items-center justify-center space-x-2 p-3.5 bg-gray-100 hover:bg-indigo-50 border border-gray-200 rounded-xl transition-all text-gray-800 text-xs font-semibold group shadow-sm"
-            >
-              <Download className="w-4 h-4 text-indigo-500 group-hover:scale-110 transition-transform" />
-              <span>Download Transcript (.txt)</span>
-            </button>
-
-            <button
-              onClick={handleDownloadHTMLReport}
-              className="flex items-center justify-center space-x-2 p-3.5 bg-gray-100 hover:bg-purple-50 border border-gray-200 rounded-xl transition-all text-gray-800 text-xs font-semibold group shadow-sm"
-            >
-              <Download className="w-4 h-4 text-purple-500 group-hover:scale-110 transition-transform" />
-              <span>Download Visual Report (.html)</span>
-            </button>
-
-            <button
-              onClick={handleJournal}
-              className="flex items-center justify-center space-x-2 p-3.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl shadow-md hover:opacity-95 transition-all text-xs font-bold transform hover:scale-[1.02]"
-            >
-              <BookOpen className="w-4 h-4" />
-              <span>Open Journal Worksheet</span>
-            </button>
-          </div>
-        </div>
-      ) : (
-        <div className="text-center text-gray-500 pt-8 flex flex-col justify-center items-center h-full">
-          <AlertCircle className="mx-auto text-red-400 text-4xl" />
-          <p className="mt-4 text-base font-semibold">Error: Could not retrieve session summary.</p>
-          <button
-            onClick={() => setSessionState('active')}
-            className="mt-4 px-5 py-2 bg-indigo-600 text-white rounded-full text-xs font-semibold shadow hover:bg-indigo-700"
-          >
-            Return to Active Session
-          </button>
-        </div>
-      )}
-
-      <ShareModal
-        isOpen={isShareModalOpen}
-        onClose={() => setIsShareModalOpen(false)}
-        sessionData={sessionSummaryData}
-        userProfile={userProfile}
-        userQuote={userQuote}
-        onTriggerGumroad={onTriggerGumroad}
-      />
-    </div>
-  );
-};
-
-// --- JOURNALING TEMPLATE ---
-const JournalingTemplate = ({ initialJournalData, isLoading, userProfile }) => {
-  const [journal, setJournal] = useState({
-    emotionIdentified: '',
-    coreNeed: '',
-    summaryOfEvents: '',
-    reflectionPrompt1: '',
-    reflectionPrompt2: '',
-    littleSteps: [],
-    treasuresAndGifts: [],
-    eaWisdom: '',
-    userNotes: ''
-  });
-
-  const [newStepText, setNewStepText] = useState('');
-  const [newGiftText, setNewGiftText] = useState('');
-
-  useEffect(() => {
-    if (initialJournalData) {
-      setJournal({
-        emotionIdentified: initialJournalData.emotionIdentified || 'Vulnerable Courage',
-        coreNeed: initialJournalData.coreNeed || 'Authentic validation and secure boundaries',
-        summaryOfEvents: initialJournalData.summaryOfEvents || `Reflected thoughtfully${userProfile.location ? ` in ${userProfile.location}` : ''} on ${userProfile.currentDate}, learning to express needs without hesitation.`,
-        reflectionPrompt1: initialJournalData.reflectionPrompt1 || `What story or expectation was I holding onto${userProfile.location ? ` in ${userProfile.location}` : ''} that made this conversation challenging?`,
-        reflectionPrompt2: initialJournalData.reflectionPrompt2 || `How did my body feel when I chose to speak my truth instead of staying silent?`,
-        littleSteps: initialJournalData.littleSteps ? initialJournalData.littleSteps.map(s => ({ text: s, completed: false })) : [
-          { text: "Take 3 slow mindful breaths before initiating difficult discussions", completed: false },
-          { text: "Write down 1 personal boundary to protect your calm this week", completed: false }
-        ],
-        treasuresAndGifts: initialJournalData.treasuresAndGifts || ['Deep Self-Awareness', 'Gentle Courage', 'Clarity'],
-        eaWisdom: initialJournalData.eaWisdom || `Treat your feelings with kindness—they are trusted navigational signals, not sentences.`,
-        userNotes: ''
-      });
-    }
-  }, [initialJournalData, userProfile]);
-
-  const handleToggleStep = (index) => {
-    setJournal(prev => {
-      const updated = [...prev.littleSteps];
-      updated[index].completed = !updated[index].completed;
-      return { ...prev, littleSteps: updated };
-    });
-  };
-
-  const handleAddStep = () => {
-    if (!newStepText.trim()) return;
-    setJournal(prev => ({
-      ...prev,
-      littleSteps: [...prev.littleSteps, { text: newStepText.trim(), completed: false }]
-    }));
-    setNewStepText('');
-  };
-
-  const handleAddGift = () => {
-    if (!newGiftText.trim()) return;
-    setJournal(prev => ({
-      ...prev,
-      treasuresAndGifts: [...prev.treasuresAndGifts, newGiftText.trim()]
-    }));
-    setNewGiftText('');
-  };
-
-  const handlePrint = () => {
-    window.print();
-  };
-
-  const handleDownloadWorksheetHTML = () => {
-    const html = `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Empathy Journal Worksheet</title>
-    <style>
-        body { font-family: 'Georgia', serif; background: #fffdfa; color: #2d3748; padding: 40px; max-width: 800px; margin: auto; }
-        .border-frame { border: 3px double #818cf8; padding: 30px; border-radius: 20px; background: #ffffff; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
-        .stamp { font-family: sans-serif; font-size: 11px; text-transform: uppercase; color: #6366f1; letter-spacing: 1.5px; border-bottom: 1px dashed #cbd5e1; padding-bottom: 8px; margin-bottom: 16px; display: flex; justify-between; }
-        h1 { color: #4338ca; text-align: center; font-size: 26px; margin-bottom: 5px; }
-        .subtitle { text-align: center; font-style: italic; color: #6b7280; font-size: 14px; margin-bottom: 25px; }
-        .box { background: #f8fafc; border-left: 4px solid #6366f1; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
-        .title { font-weight: bold; font-family: sans-serif; text-transform: uppercase; font-size: 11px; color: #4f46e5; letter-spacing: 1px; }
-        .text { font-size: 15px; margin-top: 6px; }
-        ul { padding-left: 20px; }
-        li { margin-bottom: 8px; }
-        .footer { text-align: center; margin-top: 30px; font-size: 12px; color: #9ca3af; font-family: sans-serif; }
-    </style>
-</head>
-<body>
-    <div class="border-frame">
-        <div class="stamp">
-            ${userProfile.name ? `<span>👤 ${userProfile.name}</span>` : '<span>👤 Practitioner</span>'}
-            ${userProfile.location ? `<span>📍 ${userProfile.location}</span>` : ''}
-            <span>📅 ${userProfile.currentDate} (${userProfile.timeOfDay})</span>
-        </div>
-
-        <h1>Self-Compassion Journal Worksheet</h1>
-        <div class="subtitle">Personalized Reflection & Mindful Action Sheet</div>
-
-        <div class="box">
-            <div class="title">1. Core Emotion Identified</div>
-            <div class="text">${journal.emotionIdentified}</div>
-        </div>
-
-        <div class="box">
-            <div class="title">2. Underlying Need</div>
-            <div class="text">${journal.coreNeed}</div>
-        </div>
-
-        <div class="box">
-            <div class="title">3. Reflection Summary</div>
-            <div class="text">${journal.summaryOfEvents}</div>
-        </div>
-
-        <div class="box">
-            <div class="title">4. Deep Journaling Prompt: Unpacking Expectations</div>
-            <div class="text" style="font-style: italic;">${journal.reflectionPrompt1}</div>
-            <div class="text" style="margin-top: 10px; color: #4a5568;">Your Response: ${journal.userNotes || "__________________________________________________"}</div>
-        </div>
-
-        <div class="box">
-            <div class="title">5. Deep Journaling Prompt: Somatic Awareness</div>
-            <div class="text" style="font-style: italic;">${journal.reflectionPrompt2}</div>
-        </div>
-
-        <div class="box">
-            <div class="title">6. Little Action Steps</div>
-            <ul>
-                ${journal.littleSteps.map(s => `<li>[${s.completed ? 'X' : ' '}] ${s.text}</li>`).join('')}
-            </ul>
-        </div>
-
-        <div class="box">
-            <div class="title">7. Treasures & Strengths Discovered</div>
-            <p>${journal.treasuresAndGifts.join(' • ')}</p>
-        </div>
-
-        <div class="footer">✨ Created with Empathy Assistant Studio ✨</div>
-    </div>
-</body>
-</html>`;
-    downloadFile(`Empathy_Worksheet_${Date.now()}.html`, html, 'text/html');
-  };
-
-  return (
-    <div className="flex-1 flex flex-col bg-white rounded-3xl shadow-xl p-6 md:p-10 space-y-6 max-w-4xl w-full mx-auto my-auto min-h-[80vh] border border-gray-100">
-      <div className="bg-indigo-50/80 p-3 rounded-2xl border border-indigo-100 flex flex-wrap justify-between items-center text-xs text-indigo-900 font-semibold">
-        {userProfile.name && <span>Practitioner: {userProfile.name}</span>}
-        {userProfile.location && <span>Location: {userProfile.location}</span>}
-        <span>Date: {userProfile.currentDate} ({userProfile.timeOfDay})</span>
-      </div>
-
-      <div className="flex justify-between items-center border-b pb-4 flex-wrap gap-3">
-        <div>
-          <h2 className="text-2xl md:text-3xl font-serif font-bold text-indigo-900 flex items-center gap-2">
-            <BookOpen className="w-8 h-8 text-indigo-600" />
-            Empathy Journal Worksheet
-          </h2>
-          <p className="text-xs md:text-sm text-gray-500 italic mt-1">Personal reflection & action sheet prepared for your journey.</p>
-        </div>
-
-        <div className="flex items-center space-x-2">
-          <button
-            onClick={handlePrint}
-            className="px-4 py-2 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200 rounded-xl font-bold text-xs transition-colors flex items-center gap-1.5 shadow-sm"
-            title="Print or Save PDF"
-          >
-            <Printer className="w-4 h-4" /> Print / Save PDF
-          </button>
-
-          <button
-            onClick={handleDownloadWorksheetHTML}
-            className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-bold text-xs shadow-md hover:opacity-95 transition-all flex items-center gap-1.5"
-          >
-            <Download className="w-4 h-4" /> Save Worksheet
-          </button>
-        </div>
-      </div>
-
-      {isLoading ? (
-        <LoadingIndicator text="EA is weaving your personalized artistic journal template..." />
-      ) : journal ? (
-        <div className="space-y-6 flex-1 text-gray-800">
-
-          <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-amber-500/10 border border-amber-200 text-amber-900 flex items-start gap-3">
-            <Sparkles className="w-6 h-6 text-amber-600 flex-shrink-0 mt-0.5" />
-            <div>
-              <span className="text-xs font-bold uppercase tracking-wider block text-amber-700">Wisdom Gift:</span>
-              <p className="text-xs md:text-sm italic font-serif">"{journal.eaWisdom}"</p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="p-4 rounded-2xl bg-indigo-50/40 border border-indigo-100 space-y-2">
-              <label className="text-xs font-bold uppercase tracking-wider text-indigo-800 flex items-center gap-1.5">
-                <Heart className="w-4 h-4 text-indigo-500" />
-                1. Core Emotion Identified
-              </label>
-              <input
-                type="text"
-                value={journal.emotionIdentified}
-                onChange={(e) => setJournal({ ...journal, emotionIdentified: e.target.value })}
-                className="w-full p-2.5 bg-white border border-indigo-200 rounded-xl text-xs md:text-sm font-medium text-indigo-950 focus:ring-2 focus:ring-indigo-400 focus:outline-none"
-              />
-            </div>
-
-            <div className="p-4 rounded-2xl bg-purple-50/40 border border-purple-100 space-y-2">
-              <label className="text-xs font-bold uppercase tracking-wider text-purple-800 flex items-center gap-1.5">
-                <Target className="w-4 h-4 text-purple-500" />
-                2. Underlying Human Need
-              </label>
-              <input
-                type="text"
-                value={journal.coreNeed}
-                onChange={(e) => setJournal({ ...journal, coreNeed: e.target.value })}
-                className="w-full p-2.5 bg-white border border-purple-200 rounded-xl text-xs md:text-sm font-medium text-purple-950 focus:ring-2 focus:ring-purple-400 focus:outline-none"
-              />
-            </div>
-          </div>
-
-          <div className="p-4 rounded-2xl bg-gray-50/80 border border-gray-200 space-y-2">
-            <label className="text-xs font-bold uppercase tracking-wider text-gray-700 flex items-center gap-1.5">
-              <BookOpen className="w-4 h-4 text-indigo-500" />
-              3. Reflection & Situation Summary
-            </label>
-            <textarea
-              rows="2"
-              value={journal.summaryOfEvents}
-              onChange={(e) => setJournal({ ...journal, summaryOfEvents: e.target.value })}
-              className="w-full p-3 bg-white border border-gray-200 rounded-xl text-xs md:text-sm text-gray-800 focus:ring-2 focus:ring-indigo-400 focus:outline-none resize-y"
-            />
-          </div>
-
-          {/* Actual Journaling Prompt Blocks */}
-          <div className="p-5 rounded-2xl bg-blue-50/60 border border-blue-100 space-y-3">
-            <label className="text-xs font-bold uppercase tracking-wider text-blue-900 flex items-center gap-1.5">
-              <BookOpen className="w-4 h-4 text-blue-600" />
-              4. Deep Journaling Prompt: Unpacking Expectations
-            </label>
-            <p className="text-xs md:text-sm font-serif italic text-blue-950">"{journal.reflectionPrompt1}"</p>
-            <textarea
-              rows="2"
-              placeholder="Write your deeper reflections on expectations here..."
-              value={journal.userNotes}
-              onChange={(e) => setJournal({ ...journal, userNotes: e.target.value })}
-              className="w-full p-3 bg-white border border-blue-200 rounded-xl text-xs md:text-sm text-gray-800 focus:ring-2 focus:ring-blue-400 focus:outline-none resize-y"
-            />
-          </div>
-
-          <div className="p-5 rounded-2xl bg-teal-50/50 border border-teal-100 space-y-3">
-            <label className="text-xs font-bold uppercase tracking-wider text-teal-900 flex items-center gap-1.5">
-              <Wind className="w-4 h-4 text-teal-600" />
-              5. Deep Journaling Prompt: Somatic & Boundary Check
-            </label>
-            <p className="text-xs md:text-sm font-serif italic text-teal-950">"{journal.reflectionPrompt2}"</p>
-          </div>
-
-          {/* Action Steps */}
-          <div className="p-5 rounded-2xl bg-emerald-50/50 border border-emerald-100 space-y-3">
-            <div className="flex justify-between items-center">
-              <label className="text-xs font-bold uppercase tracking-wider text-emerald-900 flex items-center gap-1.5">
-                <Check className="w-4 h-4 text-emerald-600" />
-                6. Action Steps
-              </label>
-              <span className="text-[10px] text-emerald-700 font-semibold">Click to check off</span>
-            </div>
-
-            <div className="space-y-2">
-              {journal.littleSteps.map((step, idx) => (
-                <div key={idx} className="flex items-center space-x-2.5 bg-white p-2.5 rounded-xl border border-emerald-100 shadow-sm">
-                  <input
-                    type="checkbox"
-                    checked={step.completed}
-                    onChange={() => handleToggleStep(idx)}
-                    className="w-4 h-4 text-emerald-600 rounded border-emerald-300 focus:ring-emerald-500 cursor-pointer"
-                  />
-                  <span className={`text-xs md:text-sm flex-1 ${step.completed ? 'line-through text-gray-400' : 'text-gray-700 font-medium'}`}>
-                    {step.text}
-                  </span>
-                </div>
-              ))}
-            </div>
-
-            <div className="flex items-center space-x-2 pt-1">
-              <input
-                type="text"
-                placeholder="Add custom action step..."
-                value={newStepText}
-                onChange={(e) => setNewStepText(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleAddStep()}
-                className="flex-1 p-2 border border-emerald-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-400 focus:outline-none"
-              />
-              <button
-                onClick={handleAddStep}
-                className="px-3 py-2 bg-emerald-600 text-white rounded-xl text-xs font-bold hover:bg-emerald-700 transition-colors"
-              >
-                + Add Step
-              </button>
-            </div>
-          </div>
-
-          {/* Treasures */}
-          <div className="p-5 rounded-2xl bg-pink-50/50 border border-pink-100 space-y-3">
-            <label className="text-xs font-bold uppercase tracking-wider text-pink-900 flex items-center gap-1.5">
-              <Trophy className="w-4 h-4 text-pink-600" />
-              7. Discovered Gifts & Strengths
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {journal.treasuresAndGifts.map((gift, i) => (
-                <span key={i} className="px-3 py-1 bg-white border border-pink-200 text-pink-800 rounded-full text-xs font-semibold shadow-sm flex items-center gap-1">
-                  <Bookmark className="w-3.5 h-3.5 text-pink-500" />
-                  {gift}
-                </span>
-              ))}
-            </div>
-
-            <div className="flex items-center space-x-2 pt-1">
-              <input
-                type="text"
-                placeholder="Record insight or strength..."
-                value={newGiftText}
-                onChange={(e) => setNewGiftText(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleAddGift()}
-                className="flex-1 p-2 border border-pink-200 rounded-xl text-xs focus:ring-2 focus:ring-pink-400 focus:outline-none"
-              />
-              <button
-                onClick={handleAddGift}
-                className="px-3 py-2 bg-pink-600 text-white rounded-xl text-xs font-bold hover:bg-pink-700 transition-colors"
-              >
-                + Add Treasure
-              </button>
-            </div>
-          </div>
-
-        </div>
-      ) : (
-        <div className="text-center text-gray-500 pt-8">
-          <p>Could not load journal worksheet entry.</p>
-        </div>
-      )}
-    </div>
-  );
-};
+const THEMED_LIBRARIES = [
+  {
+    id: 'spooky',
+    title: '🎃 Spooky & Halloween',
+    subtitle: 'Eerie whimsy, nocturnal magic & ghostly delight',
+    items: [
+      { emoji: '🎃👻🕯️', name: 'Twilight Harvest Spell', emotion: 'Nostalgic Spooky Whimsy', description: 'Cozy autumn night with glowing lanterns and playful spirits.' },
+      { emoji: '🦇🔮🌙', name: 'Nocturnal Oracle', emotion: 'Mystical Intuition', description: 'Channeling midnight secrets and bat-wing magic.' },
+      { emoji: '💀🥀🖤', name: 'Gothic Elegance', emotion: 'Romantic Melancholy', description: 'Honoring dark beauty and eternal memories.' },
+      { emoji: '🕸️🕷️✨', name: 'Labyrinth Reverie', emotion: 'Intricate Mystery', description: 'Weaving delicate webs of cosmic thought.' },
+      { emoji: '🍬👺🧟', name: 'Trick-or-Treat Chaos', emotion: 'Playful Mischief', description: 'High-energy festive fun and sweet scares.' },
+      { emoji: '🧪🧟‍♀️⚡', name: 'Alchemy Awakening', emotion: 'Spark of Creation', description: 'Bringing Frankensteinian passion to new projects.' }
+    ]
+  },
+  {
+    id: 'niche',
+    title: '🎭 Niche Complex States',
+    subtitle: 'Hyper-specific human emotions that words struggle to capture',
+    items: [
+      { emoji: '🌌👁️🏙️', name: 'Sonder', emotion: 'Universal Interconnection', description: 'The sudden realization that every random passerby lives a life as vivid and complex as your own.' },
+      { emoji: '🌊⛵🌅', name: 'Saudade', emotion: 'Bittersweet Nostalgia', description: 'A deep melancholic longing for an absent something or someone that is loved.' },
+      { emoji: '😏😈🍿', name: 'Schadenfreude', emotion: 'Secret Amuse', description: 'Finding mischievous amusement in minor external drama.' },
+      { emoji: '🌧️🍃🪵', name: 'Petrichor Bliss', emotion: 'Somatic Grounding', description: 'The soothing emotional clarity smelled right after fresh rain hits warm dry earth.' },
+      { emoji: '🌸⏳🍂', name: 'Mono no Aware', emotion: 'Impermanent Grace', description: 'An empathetic awareness of the fleeting, impermanent beauty of all things.' },
+      { emoji: '🔥💃🎺', name: 'Duende', emotion: 'Raw Soulful Passion', description: 'An authentic mysterious power and emotional depth that surges through art.' }
+    ]
+  },
+  {
+    id: 'spiritual',
+    title: '🔮 Spiritual & Mystical',
+    subtitle: 'Cosmic alignment, aura halos & sacred geometry',
+    items: [
+      { emoji: '🧘‍♂️🕊️🌈', name: 'Prismatic Zen', emotion: 'Transcendent Peace', description: 'Complete energetic alignment and soft heart radiance.' },
+      { emoji: '👁️🪐✨', name: 'Cosmic Third Eye', emotion: 'Heightened Perception', description: 'Seeing beyond mundane illusions into planetary harmony.' },
+      { emoji: '💎🪷🕯️', name: 'Lotus Sanctuary', emotion: 'Unshakeable Purity', description: 'Bloomed wisdom rising pristine out of muddy waters.' },
+      { emoji: '🌕🐺🌾', name: 'Full Moon Awakening', emotion: 'Wild Liberation', description: 'Releasing suppressed instincts under the lunar glow.' },
+      { emoji: '⚡🔮🛡️', name: 'Aura Shield', emotion: 'Energetic Protection', description: 'Deflecting negativity with radiant spiritual force.' }
+    ]
+  },
+  {
+    id: 'holidays',
+    title: '🎄 Holidays & Festivities',
+    subtitle: 'Seasonal solstice, harvest warmth & global cheer',
+    items: [
+      { emoji: '🕯️🎁❄️', name: 'Winter Solstice Light', emotion: 'Heartwarming Reunion', description: 'Gathering around hearth fire during snowbound evenings.' },
+      { emoji: '🧧🎆🦁', name: 'Lunar Spring Renewal', emotion: 'Prosperous Vitality', description: 'Welcoming luck, health, and vibrant dragon fire.' },
+      { emoji: '🪔✨🍬', name: 'Diwali Sparkler', emotion: 'Triumph of Light', description: 'Illuminating homes and minds with golden joy.' },
+      { emoji: '🦃🍁🥧', name: 'Harvest Gratitude', emotion: 'Bountiful Abundance', description: 'Shared meals and deep thankfulness for life’s blessings.' }
+    ]
+  },
+  {
+    id: 'global',
+    title: '🌐 Global & Cultural Expressions',
+    subtitle: 'Universal Emotional Language (UEL) across continents',
+    items: [
+      { emoji: '🍵🎋🌸', name: 'Hanami Serenity (Japan)', emotion: 'Mindful Appreciation', description: 'Contemplative enjoyment of cherry blossoms and tea.' },
+      { emoji: '💃🍇☀️', name: 'Sobremesa (LatAm / Spain)', emotion: 'Cherished Fellowship', description: 'The joyful conversation lingering around the table long after a meal.' },
+      { emoji: '🛋️🔥🥐', name: 'Hygge Warmth (Nordic)', emotion: 'Cozy Belonging', description: 'Creating a warm, gentle atmosphere with loved ones.' },
+      { emoji: '🧿☕🌴', name: 'Tarab & Warmth (Middle East)', emotion: 'Enraptured Hospitality', description: 'Ecstatic emotional resonance sparked by music, coffee, and warmth.' }
+    ]
+  }
+];
+
+const OFFLINE_TRANSLATIONS = [
+  {
+    textKey: "overwhelmed",
+    emojiSequence: "🌊📦🤯 -> 🧘‍♀️🌿☁️",
+    explanation: "Transitions from chaos and overload (waves, heavy boxes) to grounded breath (meditation, green leaves, soft clouds). Recognized universally in East Asian and Western digital communication as a reset sequence."
+  },
+  {
+    textKey: "grateful",
+    emojiSequence: "🙏✨🌸💖",
+    explanation: "Cross-cultural symbol combining respectful hands (Anoop/Gassho in Asia, prayer in West) with blooming warmth and sparkles, bridging language barriers instantly."
+  },
+  {
+    textKey: "spooky",
+    emojiSequence: "🎃👻🕸️✨",
+    explanation: "Playful spooky aesthetic that translates Halloween cheer without threatening undertones across international markets."
+  },
+  {
+    textKey: "sonder",
+    emojiSequence: "🌆👥🪐💭",
+    explanation: "Captures the realization that every stranger has a story as deep as yours—urban sunset, passing crowds, cosmic perspective."
+  },
+  {
+    textKey: "cozy",
+    emojiSequence: "🌧️☕🧦🔥",
+    explanation: "Universal Hygge representation—rain outside, hot beverage, cozy warmth, and open flame."
+  }
+];
+
+// --- NICHE PRESETS FOR STUDIO ---
+const STUDIO_PRESETS = [
+  { id: 'sonder', name: 'Sonder', baseColor: '#8b5cf6', eyeStyle: 'starry', mouthStyle: 'oGasp', auraStyle: 'nebula', accessory: 'moon', desc: 'The realization that each random passerby lives a life as vivid as your own.' },
+  { id: 'saudade', name: 'Saudade', baseColor: '#3b82f6', eyeStyle: 'cryingJoy', mouthStyle: 'calm', auraStyle: 'fog', accessory: 'coffee', desc: 'A deep melancholic longing for something or someone loved and absent.' },
+  { id: 'spooky', name: 'Spooky Reverie', baseColor: '#10b981', eyeStyle: 'ghostly', mouthStyle: 'vamp', auraStyle: 'fog', accessory: 'bat', desc: 'Autumn twilight magic, eerie pumpkins, and nocturnal joy.' },
+  { id: 'schadenfreude', name: 'Schadenfreude', baseColor: '#f59e0b', eyeStyle: 'suspicious', mouthStyle: 'smirk', auraStyle: 'sparkles', accessory: 'bat', desc: 'Mischievous delight in life’s minor harmless ironies.' },
+  { id: 'duende', name: 'Duende', baseColor: '#ef4444', eyeStyle: 'flame', mouthStyle: 'tongue', auraStyle: 'phoenix', accessory: 'wand', desc: 'Raw soulful passion and uninhibited emotional energy.' },
+  { id: 'zen', name: 'Lotus Zen', baseColor: '#ec4899', eyeStyle: 'sparkle', mouthStyle: 'smile', auraStyle: 'lotus', accessory: 'flowerCrown', desc: 'Serene spiritual bloom and unshakeable inner peace.' }
+];
 
 // --- MAIN APP COMPONENT ---
 export default function App() {
-  const [userProfile, setUserProfile] = useState({
-    name: 'Friend',
-    location: '',
-    currentDate: new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }),
-    currentTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    timeOfDay: (() => {
-      const hour = new Date().getHours();
-      if (hour < 12) return 'Morning';
-      if (hour < 17) return 'Afternoon';
-      return 'Evening';
-    })()
+  const [activeTab, setActiveTab] = useState('decipher'); // decipher, studio, library, translator
+  const [themeMode, setThemeMode] = useState('dark');
+  const [joyOrbs, setJoyOrbs] = useState(() => {
+    return parseInt(localStorage.getItem('EMOJI_JOY_ORBS') || '120', 10);
   });
-
-  const [sessionState, setSessionState] = useState('active'); // active, ending, summary, journaling
-  const [isRecording, setIsRecording] = useState(false);
-  const [userInput, setUserInput] = useState('');
-  const [conversation, setConversation] = useState([
-    { speaker: 'bot', text: `Aloha & welcome to Empathy Assistant Studio! How are you feeling today? Tell me what's on your mind or choose a practice scenario to begin.` }
-  ]);
-  const [feedback, setFeedback] = useState({ title: '', suggestions: [] });
-  const [activeScenario, setActiveScenario] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [sessionSummaryData, setSessionSummaryData] = useState(null);
-  const [journalEntry, setJournalEntry] = useState(null);
-  const [messageCount, setMessageCount] = useState(0);
-  const [interjectionIndex, setInterjectionIndex] = useState(0);
+  const [streakDays] = useState(4);
   const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
+  const [userCredentialVal, setUserCredentialVal] = useState(getAppServiceToken());
 
-  const recognitionRef = useRef(null);
+  // Decipher State
+  const [decipherInput, setDecipherInput] = useState('🎃👻🕯️');
+  const [decipherResult, setDecipherResult] = useState(PRESET_DECIPHERS["🎃👻🕯️"]);
+  const [isDecipherLoading, setIsDecipherLoading] = useState(false);
 
-  useEffect(() => {
-    if (!('webkitSpeechRecognition' in window)) {
-      console.log("Web Speech API is not supported by this browser.");
+  // Studio State
+  const [studioBaseColor, setStudioBaseColor] = useState('#8b5cf6');
+  const [studioEyeStyle, setStudioEyeStyle] = useState('starry');
+  const [studioMouthStyle, setStudioMouthStyle] = useState('smile');
+  const [studioAuraStyle, setStudioAuraStyle] = useState('nebula');
+  const [studioAccessory, setStudioAccessory] = useState('bat');
+  const [studioEmojiTitle, setStudioEmojiTitle] = useState('Cosmic Spooky Reverie');
+  const [studioEmotionDescription, setStudioEmotionDescription] = useState('A hyper-personal emoji capturing autumn mystery and star-lit magic.');
+  const [isStudioGenerating, setIsStudioGenerating] = useState(false);
+
+  // Library State
+  const [librarySearch, setLibrarySearch] = useState('');
+  const [activeLibCategory, setActiveLibCategory] = useState('all');
+
+  // Translator State
+  const [translatorInput, setTranslatorInput] = useState('I am feeling overwhelmed by work but hopeful for the rainy weekend.');
+  const [translatorRegion, setTranslatorRegion] = useState('Global Universal');
+  const [translatorOutput, setTranslatorOutput] = useState(OFFLINE_TRANSLATIONS[0]);
+  const [isTranslating, setIsTranslating] = useState(false);
+
+  // Notification Toast
+  const [toastMessage, setToastMessage] = useState('');
+
+  const showToast = (msg) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(''), 3000);
+  };
+
+  const addJoyOrbs = (amount, reason) => {
+    const newTotal = joyOrbs + amount;
+    setJoyOrbs(newTotal);
+    localStorage.setItem('EMOJI_JOY_ORBS', newTotal.toString());
+    showToast(`✨ +${amount} Joy Orbs earned for ${reason}!`);
+  };
+
+  // Handle Save API Key
+  const handleSaveApiKey = () => {
+    const encToken = encodeServiceCredential(userCredentialVal.trim());
+    localStorage.setItem(CONFIG_STORAGE_KEY, encToken);
+    setIsApiKeyModalOpen(false);
+    showToast('🔑 Service Token configured!');
+  };
+
+  // DECIPHER LOGIC
+  const handleDecipher = async (inputSequence) => {
+    const seq = inputSequence || decipherInput;
+    if (!seq.trim()) return;
+
+    setIsDecipherLoading(true);
+
+    // Check offline presets first
+    if (PRESET_DECIPHERS[seq]) {
+      setTimeout(() => {
+        setDecipherResult(PRESET_DECIPHERS[seq]);
+        setIsDecipherLoading(false);
+        addJoyOrbs(15, "Deciphering Emoji Sentiment");
+      }, 400);
       return;
     }
 
-    const recognition = new window.webkitSpeechRecognition();
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    recognition.lang = 'en-US';
-
-    recognition.onresult = (event) => {
-      let interimTranscript = '';
-      let finalTranscript = '';
-      for (let i = event.resultIndex; i < event.results.length; ++i) {
-        if (event.results[i].isFinal) {
-          finalTranscript += event.results[i][0].transcript;
-        } else {
-          interimTranscript += event.results[i][0].transcript;
-        }
-      }
-      setUserInput(finalTranscript + interimTranscript);
-    };
-
-    recognition.onerror = (event) => {
-      console.error('Speech recognition error:', event.error);
-      setIsRecording(false);
-    };
-    recognition.onend = () => setIsRecording(false);
-    recognitionRef.current = recognition;
-  }, []);
-
-  const triggerInterjection = () => {
-    const lastUserMsg = conversation.filter(m => m.speaker === 'user').pop()?.text || "";
-    const item = generatePersonalizedInterjection(userProfile, activeScenario, lastUserMsg, interjectionIndex);
-    setInterjectionIndex(prev => prev + 1);
-    setConversation(prev => [
-      ...prev,
-      { isInterjection: true, interjectionData: item }
-    ]);
-  };
-
-  const handleGumroadPurchase = () => {
-    alert("🎉 Redirecting to Gumroad Checkout ($9.99 Pass)...");
-    window.open("https://gumroad.com/l/empathy-assistant-studio", "_blank");
-  };
-
-  const getAIFeedback = async (currentInput, chatHistory) => {
+    // Call Gemini API if key available, else generate structured fallback
     try {
-      const scenarioContext = activeScenario
-        ? `The user${userProfile.name ? ` (${userProfile.name})` : ''}${userProfile.location ? ` in ${userProfile.location}` : ''} is practicing: "${activeScenario.title}" with focus: "${activeScenario.focus}".`
-        : `The user${userProfile.name ? ` (${userProfile.name})` : ''}${userProfile.location ? ` in ${userProfile.location}` : ''} is speaking during a ${userProfile.timeOfDay} reflection. If the user mentions their name or location during conversation, take note.`;
-
-      const prompt = `You are an AI Empathy Assistant coaching the user.
-      ${scenarioContext}
-
-      Analyze the user's most recent message in the context of the conversation history.
-
-      Conversation History:
-      ${chatHistory.filter(m => !m.isInterjection).map(m => `${m.speaker}: ${m.text}`).join('\n')}
-
-      Based on the user's last message ("${currentInput}"), provide a JSON object with two fields:
-      1. "response": An empathetic, supportive response addressing the user directly. Continue naturally.
-      2. "feedback": An object with "title" and "suggestions". The title should summarize feedback. The suggestions should be 2-3 brief, actionable tips.
-
-      Output must be a single valid JSON object.`;
+      const prompt = `Analyze the emotional meaning of this emoji sequence: "${seq}".
+      Provide a breakdown in JSON format with fields:
+      - "primarySentiment": Short emotional title (e.g. "Playful Spookiness").
+      - "subtext": 1-2 sentence breakdown of the unsaid feeling.
+      - "culturalContext": How this sequence is perceived across different regions or online subcultures.
+      - "periSensorMetrics": object with "arousal" (1-100), "valence" (1-100), "emotionalTone" (string).`;
 
       const config = {
         responseMimeType: "application/json",
         responseSchema: {
           type: "OBJECT",
           properties: {
-            response: { type: "STRING" },
-            feedback: {
+            primarySentiment: { type: "STRING" },
+            subtext: { type: "STRING" },
+            culturalContext: { type: "STRING" },
+            periSensorMetrics: {
               type: "OBJECT",
               properties: {
-                title: { type: "STRING" },
-                suggestions: { type: "ARRAY", items: { type: "STRING" } }
+                arousal: { type: "NUMBER" },
+                valence: { type: "NUMBER" },
+                emotionalTone: { type: "STRING" }
               },
-              required: ["title", "suggestions"]
+              required: ["arousal", "valence", "emotionalTone"]
             }
           },
-          required: ["response", "feedback"]
+          required: ["primarySentiment", "subtext", "culturalContext", "periSensorMetrics"]
         }
       };
 
-      const jsonText = await callGeminiAPI(GEMINI_MODEL, prompt, config);
-      return JSON.parse(jsonText);
+      const resultText = await callGeminiAPI(prompt, config);
+      const parsed = JSON.parse(resultText);
+      setDecipherResult(parsed);
+      addJoyOrbs(25, "Neural Emoji Deciphering");
     } catch (e) {
-      return {
-        response: `I hear you${userProfile.name ? `, ${userProfile.name}` : ''}. It takes genuine strength to reflect on "${currentInput.slice(0, 50)}...". How does expressing that feel in your body right now?`,
-        feedback: {
-          title: "Empathetic Presence & Grounding",
-          suggestions: [
-            "Acknowledge the core emotion before seeking solutions.",
-            "Take a slow 4-7-8 breath to stay centered.",
-            "Express clear, gentle boundaries when necessary."
-          ]
-        }
-      };
+      // Intelligently construct fallback
+      setDecipherResult({
+        primarySentiment: `Custom Intuitive Sentiment (${seq})`,
+        subtext: `This bespoke sequence weaves complex emotional threads blending expressiveness, subtle subtext, and personal tone.`,
+        culturalContext: `Interpreted across digital communities as a multi-layered sentiment bridge.`,
+        periSensorMetrics: { arousal: 65, valence: 80, emotionalTone: "Harmonious Spark" }
+      });
+      addJoyOrbs(15, "Offline Emoji Deciphering");
+    } finally {
+      setIsDecipherLoading(false);
     }
   };
 
-  const getAISummary = async (chatHistory) => {
+  // STUDIO PRESET APPLIER
+  const applyStudioPreset = (preset) => {
+    setStudioBaseColor(preset.baseColor);
+    setStudioEyeStyle(preset.eyeStyle);
+    setStudioMouthStyle(preset.mouthStyle);
+    setStudioAuraStyle(preset.auraStyle);
+    setStudioAccessory(preset.accessory);
+    setStudioEmojiTitle(preset.name);
+    setStudioEmotionDescription(preset.desc);
+    addJoyOrbs(10, `Applying '${preset.name}' Preset`);
+  };
+
+  // STUDIO AI GENERATION
+  const handleAIGenerateStudio = async () => {
+    setIsStudioGenerating(true);
     try {
-      const historyText = chatHistory.filter(m => !m.isInterjection).map(m => `${m.speaker === 'user' ? (userProfile.name || 'User') : 'Assistant'}: ${m.text}`).join('\n');
-
-      const prompt = `Based on the following conversation${userProfile.name ? ` with ${userProfile.name}` : ''}${userProfile.location ? ` in ${userProfile.location}` : ''} (${userProfile.currentDate}, ${userProfile.timeOfDay}), create a structured Session Review summary.
-
-      Conversation History:
-      ---
-      ${historyText}
-      ---
-
-      Provide output strictly in JSON format.`;
+      const prompt = `Create a unique hyper-personal emoji concept for a niche emotional state.
+      Return JSON format:
+      - "title": Name of the emotion (e.g. "Petrichor Euphoria").
+      - "description": 1-2 sentence description of the niche feeling.
+      - "baseColor": Hex code matching the mood (e.g. "#10b981").
+      - "eyeStyle": One of ["sparkle", "heartEyes", "sleepy", "suspicious", "ghostly", "starry", "cryingJoy", "flame"].
+      - "mouthStyle": One of ["smile", "tongue", "smirk", "pout", "oGasp", "calm", "vamp"].
+      - "auraStyle": One of ["fog", "nebula", "halo", "lotus", "phoenix", "sparkles"].
+      - "accessory": One of ["bat", "pumpkin", "coffee", "wand", "moon", "flowerCrown"].`;
 
       const config = {
         responseMimeType: "application/json",
         responseSchema: {
           type: "OBJECT",
           properties: {
-            emotionalCore: { type: "STRING", description: "Main theme explored" },
-            breakthroughMoment: { type: "STRING", description: "Highlight insight or statement" },
-            keyTakeaway: { type: "STRING", description: "Comprehensive 2-sentence summary takeaway" },
-            eaTips: { type: "ARRAY", items: { type: "STRING" }, description: "3 actionable tips specifically for the user" },
-            treasuredGrowth: { type: "ARRAY", items: { type: "STRING" }, description: "Strengths or positive qualities demonstrated" }
+            title: { type: "STRING" },
+            description: { type: "STRING" },
+            baseColor: { type: "STRING" },
+            eyeStyle: { type: "STRING" },
+            mouthStyle: { type: "STRING" },
+            auraStyle: { type: "STRING" },
+            accessory: { type: "STRING" }
           },
-          required: ["emotionalCore", "breakthroughMoment", "keyTakeaway", "eaTips", "treasuredGrowth"]
+          required: ["title", "description", "baseColor", "eyeStyle", "mouthStyle", "auraStyle", "accessory"]
         }
       };
 
-      const jsonText = await callGeminiAPI(GEMINI_MODEL, prompt, config);
-      return JSON.parse(jsonText);
+      const resText = await callGeminiAPI(prompt, config);
+      const parsed = JSON.parse(resText);
+
+      setStudioEmojiTitle(parsed.title);
+      setStudioEmotionDescription(parsed.description);
+      if (parsed.baseColor) setStudioBaseColor(parsed.baseColor);
+      if (parsed.eyeStyle) setStudioEyeStyle(parsed.eyeStyle);
+      if (parsed.mouthStyle) setStudioMouthStyle(parsed.mouthStyle);
+      if (parsed.auraStyle) setStudioAuraStyle(parsed.auraStyle);
+      if (parsed.accessory) setStudioAccessory(parsed.accessory);
+
+      addJoyOrbs(30, "AI Custom Emoji Synthesis");
     } catch (e) {
-      return {
-        emotionalCore: `${userProfile.timeOfDay} Empathy Practice`,
-        breakthroughMoment: `Engaged in deliberate emotional self-reflection and clear communication.`,
-        keyTakeaway: "Continuing to express your authentic feelings with clarity builds resilience and connection.",
-        eaTips: ["Listen actively without immediate defense", "Honor your boundaries explicitly", "Take mindful breaths when feeling overwhelmed"],
-        treasuredGrowth: ["Authenticity", "Active Listening", "Vulnerability"]
-      };
+      setStudioEmojiTitle("Ethereal Sonder Reverie");
+      setStudioEmotionDescription("A bespoke aura blend capturing midnight clarity and human connection.");
+      setStudioBaseColor("#8b5cf6");
+      setStudioAuraStyle("nebula");
+      addJoyOrbs(15, "Offline Custom Emoji Creation");
+    } finally {
+      setIsStudioGenerating(false);
     }
   };
 
-  const getAIJournal = async (chatHistory) => {
+  // TRANSLATOR LOGIC
+  const handleTranslateText = async () => {
+    if (!translatorInput.trim()) return;
+    setIsTranslating(true);
+
     try {
-      const historyText = chatHistory.filter(m => !m.isInterjection).map(m => `${m.speaker === 'user' ? (userProfile.name || 'User') : 'Assistant'}: ${m.text}`).join('\n');
-
-      const prompt = `Based on the following conversation${userProfile.name ? ` with ${userProfile.name}` : ''}${userProfile.location ? ` in ${userProfile.location}` : ''}, fill out this therapeutic journaling worksheet including actual journaling prompts (reflectionPrompt1 and reflectionPrompt2).
-
-      Conversation History:
-      ---
-      ${historyText}
-      ---
-
-      Provide output strictly in JSON format.`;
+      const prompt = `Translate this emotional text into an international UEL emoji sequence with cultural notes: "${translatorInput}" for region: "${translatorRegion}".
+      Output JSON format:
+      - "emojiSequence": The emoji sequence (e.g. "🌧️☕🧦🔥").
+      - "explanation": 2 sentence explanation of how these emojis bridge cross-cultural understanding.`;
 
       const config = {
         responseMimeType: "application/json",
         responseSchema: {
           type: "OBJECT",
           properties: {
-            emotionIdentified: { type: "STRING" },
-            coreNeed: { type: "STRING" },
-            summaryOfEvents: { type: "STRING" },
-            reflectionPrompt1: { type: "STRING", description: "A deep exploratory question about expectations" },
-            reflectionPrompt2: { type: "STRING", description: "A somatic or boundary check question" },
-            littleSteps: { type: "ARRAY", items: { type: "STRING" } },
-            treasuresAndGifts: { type: "ARRAY", items: { type: "STRING" } },
-            eaWisdom: { type: "STRING" }
+            emojiSequence: { type: "STRING" },
+            explanation: { type: "STRING" }
           },
-          required: ["emotionIdentified", "coreNeed", "summaryOfEvents", "reflectionPrompt1", "reflectionPrompt2", "littleSteps", "treasuresAndGifts", "eaWisdom"]
+          required: ["emojiSequence", "explanation"]
         }
       };
 
-      const jsonText = await callGeminiAPI(GEMINI_MODEL, prompt, config);
-      return JSON.parse(jsonText);
+      const resText = await callGeminiAPI(prompt, config);
+      const parsed = JSON.parse(resText);
+      setTranslatorOutput(parsed);
+      addJoyOrbs(20, "UEL Cross-Cultural Translation");
     } catch (e) {
-      return {
-        emotionIdentified: "Reflective Clarity",
-        coreNeed: "Empathetic Connection & Understanding",
-        summaryOfEvents: `Session on ${userProfile.currentDate}.`,
-        reflectionPrompt1: "What underlying expectation or fear was influencing how I communicated today?",
-        reflectionPrompt2: "Where in my body did I feel the most tension, and how can I soothe it?",
-        littleSteps: ["Pause 5 seconds before replying to sensitive feedback", "State one clear boundary politely this week"],
-        treasuresAndGifts: ["Self-Awareness", "Mindful Calm"],
-        eaWisdom: `Empathy is a quiet inner strength that deepens with every honest conversation.`
-      };
-    }
-  };
-
-  const handleSelectScenario = async (scenario) => {
-    setActiveScenario(scenario);
-    setIsLoading(true);
-    const scenarioIntro = `Let's practice this scenario${userProfile.name ? `, ${userProfile.name}` : ''}: "${scenario.title}". Focus: ${scenario.focus}. I will act as your practice partner. How would you like to open this conversation?`;
-
-    const newConversation = [
-      ...conversation,
-      { speaker: 'user', text: `[Selected Scenario]: ${scenario.title}` },
-      { speaker: 'bot', text: scenarioIntro }
-    ];
-
-    setConversation(newConversation);
-    setFeedback({
-      title: `Goal: ${scenario.focus}`,
-      suggestions: scenario.objectives
-    });
-    setIsLoading(false);
-    generateAndPlayTTS(scenarioIntro);
-  };
-
-  const toggleRecording = () => {
-    if (isRecording) {
-      recognitionRef.current?.stop();
-    } else {
-      setUserInput('');
-      recognitionRef.current?.start();
-    }
-    setIsRecording(!isRecording);
-  };
-
-  const handleSendMessage = async () => {
-    if (!userInput.trim() || sessionState !== 'active') return;
-
-    const newCount = messageCount + 1;
-    setMessageCount(newCount);
-
-    const newConversation = [...conversation, { speaker: 'user', text: userInput }];
-    setConversation(newConversation);
-    setUserInput('');
-    setIsLoading(true);
-    setFeedback({ title: "Analyzing communication...", suggestions: [] });
-
-    try {
-      const aiResponse = await getAIFeedback(userInput, newConversation);
-      setFeedback(aiResponse.feedback);
-
-      let updatedConversation = [...newConversation, { speaker: 'bot', text: aiResponse.response }];
-
-      if (newCount % 4 === 0) {
-        const item = generatePersonalizedInterjection(userProfile, activeScenario, userInput, interjectionIndex);
-        setInterjectionIndex(prev => prev + 1);
-        updatedConversation.push({ isInterjection: true, interjectionData: item });
-      }
-
-      setConversation(updatedConversation);
-      generateAndPlayTTS(aiResponse.response);
-    } catch (error) {
-      console.error("Error getting AI feedback:", error);
-      const errorConversation = [...newConversation, { speaker: 'bot', text: `Sorry, I had trouble connecting. Please try sending again.` }];
-      setConversation(errorConversation);
-      setFeedback({ title: "Error", suggestions: ["Could not fetch live AI feedback."] });
+      // Find matching keyword or fallback
+      const match = OFFLINE_TRANSLATIONS.find(t => translatorInput.toLowerCase().includes(t.textKey)) || OFFLINE_TRANSLATIONS[0];
+      setTranslatorOutput(match);
+      addJoyOrbs(10, "Offline UEL Translation");
     } finally {
-      setIsLoading(false);
+      setIsTranslating(false);
     }
   };
 
-  const handleEndSession = async () => {
-    setSessionState('summary');
-    setIsLoading(true);
-    setSessionSummaryData(null);
-
-    try {
-      const historyForSummary = conversation.filter(m => !m.isInterjection && m.speaker);
-      const summary = await getAISummary(historyForSummary);
-      setSessionSummaryData(summary);
-    } catch (error) {
-      console.error("Error generating session summary:", error);
-    } finally {
-      setIsLoading(false);
-    }
+  // DOWNLOAD HTML CARD
+  const handleDownloadCard = () => {
+    const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>${studioEmojiTitle} - Emoji Extravaganza Card</title>
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #0f172a; color: white; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+    .card { background: linear-gradient(135deg, ${studioBaseColor}44 0%, #1e1b4b 100%); border: 2px solid ${studioBaseColor}; border-radius: 24px; padding: 40px; max-width: 480px; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.5); backdrop-filter: blur(12px); }
+    .emoji-preview { width: 160px; height: 160px; margin: 0 auto 20px; background: rgba(255,255,255,0.05); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 80px; border: 3px solid ${studioBaseColor}; box-shadow: 0 0 30px ${studioBaseColor}88; }
+    h1 { color: #f8fafc; font-size: 24px; margin-bottom: 8px; }
+    p { color: #cbd5e1; font-size: 14px; line-height: 1.6; }
+    .badge { display: inline-block; padding: 6px 16px; background: ${studioBaseColor}; color: white; font-size: 11px; font-weight: bold; border-radius: 20px; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 16px; }
+    .footer { margin-top: 30px; font-size: 11px; color: #94a3b8; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="badge">Emoji Extravaganza • Bespoke Asset</div>
+    <div class="emoji-preview">✨🎭✨</div>
+    <h1>${studioEmojiTitle}</h1>
+    <p>"${studioEmotionDescription}"</p>
+    <div class="footer">Created with Emoji Extravaganza Universal Emotional Bridge • #EmojiExtravaganza</div>
+  </div>
+</body>
+</html>`;
+    downloadFile(`${studioEmojiTitle.replace(/\s+/g, '_')}_Card.html`, html, 'text/html');
+    addJoyOrbs(15, "Downloading HTML Emoji Insight Card");
   };
-
-  const handleJournaling = async () => {
-    setSessionState('journaling');
-    setIsLoading(true);
-    setJournalEntry(null);
-
-    try {
-      const historyForJournal = conversation.filter(m => !m.isInterjection && m.speaker);
-      const journal = await getAIJournal(historyForJournal);
-      setJournalEntry(journal);
-    } catch (error) {
-      console.error("Error generating journal entry:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  if (sessionState === 'ending') {
-    return (
-      <div className="flex flex-col h-screen bg-gray-50 font-sans p-4 md:p-8">
-        <Header setSessionState={setSessionState} sessionState={sessionState} userProfile={userProfile} setUserProfile={setUserProfile} onOpenSettings={() => setIsApiKeyModalOpen(true)} onTriggerGumroad={handleGumroadPurchase} />
-        <div className="flex-1 flex flex-col justify-center items-center text-center p-8">
-          <div className="relative">
-            <div className="w-40 h-40 rounded-full bg-red-100 animate-pulse absolute inset-0 m-auto"></div>
-            <button
-              onClick={handleEndSession}
-              className="w-40 h-40 rounded-full bg-gradient-to-tr from-red-500 to-rose-600 text-white font-bold text-lg flex flex-col items-center justify-center shadow-2xl transition-all transform hover:scale-105 relative z-10"
-            >
-              <Check className="w-10 h-10 mb-1" />
-              Confirm End
-            </button>
-          </div>
-          <p className="mt-8 text-xl text-gray-700 font-medium">Ready to end your session and generate your personalized review card?</p>
-        </div>
-
-        <ApiKeyModal isOpen={isApiKeyModalOpen} onClose={() => setIsApiKeyModalOpen(false)} />
-      </div>
-    );
-  }
-
-  if (sessionState === 'summary') {
-    return (
-      <div className="flex flex-col h-screen bg-gray-50 font-sans p-4 md:p-8 overflow-y-auto custom-scrollbar">
-        <Header setSessionState={setSessionState} sessionState={sessionState} userProfile={userProfile} setUserProfile={setUserProfile} onOpenSettings={() => setIsApiKeyModalOpen(true)} onTriggerGumroad={handleGumroadPurchase} />
-        <SessionSummaryPanel
-          sessionSummaryData={sessionSummaryData}
-          handleJournal={handleJournaling}
-          setSessionState={setSessionState}
-          conversation={conversation}
-          isLoading={isLoading}
-          userProfile={userProfile}
-          onTriggerGumroad={handleGumroadPurchase}
-        />
-
-        <ApiKeyModal isOpen={isApiKeyModalOpen} onClose={() => setIsApiKeyModalOpen(false)} />
-      </div>
-    );
-  }
-
-  if (sessionState === 'journaling') {
-    return (
-      <div className="flex flex-col h-screen bg-gray-50 font-sans p-4 md:p-8 overflow-y-auto custom-scrollbar">
-        <Header setSessionState={setSessionState} sessionState={sessionState} userProfile={userProfile} setUserProfile={setUserProfile} onOpenSettings={() => setIsApiKeyModalOpen(true)} onTriggerGumroad={handleGumroadPurchase} />
-        <JournalingTemplate
-          initialJournalData={journalEntry}
-          isLoading={isLoading}
-          userProfile={userProfile}
-        />
-        <button
-          onClick={() => setSessionState('summary')}
-          className="mt-6 mx-auto px-6 py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-full transition-colors font-semibold text-xs mb-8 print:hidden"
-        >
-          ← Back to Session Summary
-        </button>
-
-        <ApiKeyModal isOpen={isApiKeyModalOpen} onClose={() => setIsApiKeyModalOpen(false)} />
-      </div>
-    );
-  }
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50 font-sans">
-      <Header setSessionState={setSessionState} sessionState={sessionState} userProfile={userProfile} setUserProfile={setUserProfile} onOpenSettings={() => setIsApiKeyModalOpen(true)} onTriggerGumroad={handleGumroadPurchase} />
-      <main className="flex-1 flex flex-col md:flex-row p-4 gap-4 overflow-hidden max-w-7xl w-full mx-auto">
-        <div className="flex-[2] flex flex-col min-h-0 order-1 md:order-1">
-           <ConversationPanel
-            conversation={conversation}
-            isLoading={isLoading}
-            onTriggerBreak={triggerInterjection}
-            userProfile={userProfile}
-           />
-           <MessageInput
-            userInput={userInput}
-            setUserInput={setUserInput}
-            handleSendMessage={handleSendMessage}
-            toggleRecording={toggleRecording}
-            isRecording={isRecording}
-            isLoading={isLoading}
-            setSessionState={setSessionState}
-            userProfile={userProfile}
-           />
+    <div className={`min-h-screen ${themeMode === 'dark' ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-800'} transition-colors duration-300 font-sans flex flex-col`}>
+
+      {/* TOAST NOTIFICATION */}
+      {toastMessage && (
+        <div className="fixed top-5 right-5 z-50 bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-4 py-2.5 rounded-2xl shadow-2xl flex items-center gap-2 animate-bounce text-xs font-bold border border-white/20">
+          <Sparkles className="w-4 h-4 text-amber-300" />
+          <span>{toastMessage}</span>
         </div>
-        <div className="flex-[1] flex flex-col order-2 md:order-2">
-          <FeedbackPanel
-            feedback={feedback}
-            activeScenario={activeScenario}
-            onSelectScenario={handleSelectScenario}
-            userProfile={userProfile}
-          />
+      )}
+
+      {/* NAVIGATION HEADER */}
+      <header className={`sticky top-0 z-40 backdrop-blur-md border-b ${themeMode === 'dark' ? 'bg-slate-950/80 border-slate-800' : 'bg-white/80 border-slate-200'} px-4 py-3 transition-colors`}>
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+
+          {/* LOGO */}
+          <div className="flex items-center space-x-3">
+            <div className="p-2.5 bg-gradient-to-tr from-purple-600 via-indigo-600 to-pink-500 rounded-2xl text-white shadow-lg shadow-purple-500/20">
+              <SmilePlus className="w-6 h-6 animate-pulse" />
+            </div>
+            <div>
+              <h1 className="text-base md:text-lg font-black tracking-tight bg-gradient-to-r from-purple-400 via-pink-400 to-amber-300 bg-clip-text text-transparent flex items-center gap-2">
+                Emoji Extravaganza
+                <span className="text-[10px] uppercase font-extrabold bg-purple-500/20 text-purple-300 border border-purple-500/30 px-2 py-0.5 rounded-full">
+                  UEL Engine v2.5
+                </span>
+              </h1>
+              <p className="text-[11px] text-slate-400 hidden sm:block">
+                International Emotional Bridging & Hyper-Personal Emoji Studio
+              </p>
+            </div>
+          </div>
+
+          {/* TABS NAVIGATION */}
+          <nav className="hidden md:flex items-center space-x-1 bg-slate-900/60 p-1.5 rounded-2xl border border-slate-800/80">
+            <button
+              onClick={() => setActiveTab('decipher')}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                activeTab === 'decipher'
+                  ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+              }`}
+            >
+              <Compass className="w-3.5 h-3.5" /> Decipher Tool
+            </button>
+
+            <button
+              onClick={() => setActiveTab('studio')}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                activeTab === 'studio'
+                  ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+              }`}
+            >
+              <Palette className="w-3.5 h-3.5" /> Emoji Studio
+            </button>
+
+            <button
+              onClick={() => setActiveTab('library')}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                activeTab === 'library'
+                  ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+              }`}
+            >
+              <Bookmark className="w-3.5 h-3.5" /> Themed Libraries
+            </button>
+
+            <button
+              onClick={() => setActiveTab('translator')}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                activeTab === 'translator'
+                  ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+              }`}
+            >
+              <Globe className="w-3.5 h-3.5" /> UEL Translator
+            </button>
+          </nav>
+
+          {/* GAMIFICATION & SETTINGS */}
+          <div className="flex items-center space-x-2">
+
+            {/* JOY ORBS WALLET */}
+            <div
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-amber-500/20 to-purple-500/20 border border-amber-500/30 rounded-xl text-amber-300 text-xs font-extrabold cursor-pointer hover:brightness-110 transition-all"
+              title="Joy Orbs Earned through Emotional Expression (Converts to TokeX Tokens)"
+              onClick={() => showToast(`🪙 ${joyOrbs} Joy Orbs = ${(joyOrbs * 0.25).toFixed(2)} TokeX Tokens!`)}
+            >
+              <Coins className="w-4 h-4 text-amber-400 animate-spin" style={{ animationDuration: '6s' }} />
+              <span>{joyOrbs} Orbs</span>
+            </div>
+
+            {/* STREAK */}
+            <div
+              className="hidden sm:flex items-center gap-1 px-2.5 py-1.5 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-400 text-xs font-bold"
+              title="Daily Joy Streak"
+            >
+              <Flame className="w-4 h-4 text-rose-500" />
+              <span>{streakDays}d</span>
+            </div>
+
+            {/* SERVICE KEY BUTTON */}
+            <button
+              onClick={() => setIsApiKeyModalOpen(true)}
+              className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl transition-all border border-slate-700 text-xs"
+              title="Configure Service Token"
+            >
+              <Key className="w-4 h-4 text-amber-400" />
+            </button>
+
+            {/* THEME TOGGLE */}
+            <button
+              onClick={() => setThemeMode(themeMode === 'dark' ? 'light' : 'dark')}
+              className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl transition-all border border-slate-700 text-xs"
+              title="Toggle Dark / Light Theme"
+            >
+              {themeMode === 'dark' ? <Sun className="w-4 h-4 text-amber-300" /> : <Moon className="w-4 h-4 text-indigo-600" />}
+            </button>
+          </div>
+
         </div>
+
+        {/* MOBILE BOTTOM / NAVIGATION STRIP */}
+        <div className="flex md:hidden justify-around pt-2 border-t border-slate-800/60 mt-2">
+          <button
+            onClick={() => setActiveTab('decipher')}
+            className={`p-2 rounded-xl text-[11px] font-bold flex flex-col items-center gap-1 ${
+              activeTab === 'decipher' ? 'text-purple-400' : 'text-slate-400'
+            }`}
+          >
+            <Compass className="w-4 h-4" /> Decipher
+          </button>
+          <button
+            onClick={() => setActiveTab('studio')}
+            className={`p-2 rounded-xl text-[11px] font-bold flex flex-col items-center gap-1 ${
+              activeTab === 'studio' ? 'text-purple-400' : 'text-slate-400'
+            }`}
+          >
+            <Palette className="w-4 h-4" /> Studio
+          </button>
+          <button
+            onClick={() => setActiveTab('library')}
+            className={`p-2 rounded-xl text-[11px] font-bold flex flex-col items-center gap-1 ${
+              activeTab === 'library' ? 'text-purple-400' : 'text-slate-400'
+            }`}
+          >
+            <Bookmark className="w-4 h-4" /> Libraries
+          </button>
+          <button
+            onClick={() => setActiveTab('translator')}
+            className={`p-2 rounded-xl text-[11px] font-bold flex flex-col items-center gap-1 ${
+              activeTab === 'translator' ? 'text-purple-400' : 'text-slate-400'
+            }`}
+          >
+            <Globe className="w-4 h-4" /> Translator
+          </button>
+        </div>
+      </header>
+
+      {/* MAIN CONTENT AREA */}
+      <main className="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 space-y-6">
+
+        {/* TAB 1: EMOJI DECIPHER TOOL */}
+        {activeTab === 'decipher' && (
+          <div className="space-y-6 animate-fade-in">
+
+            {/* HERO BANNER */}
+            <div className="p-6 md:p-8 rounded-3xl bg-gradient-to-r from-purple-900/60 via-indigo-900/40 to-slate-900 border border-purple-500/20 shadow-2xl relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl pointer-events-none"></div>
+              <div className="max-w-2xl space-y-3 relative z-10">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-500/20 border border-purple-500/30 text-purple-300 text-xs font-extrabold uppercase tracking-wider">
+                  <Compass className="w-3.5 h-3.5" /> Neural Decipher Engine
+                </span>
+                <h2 className="text-2xl md:text-3xl font-black text-white">
+                  Decipher Complex Emojis & Unsaid Sentiments
+                </h2>
+                <p className="text-xs md:text-sm text-slate-300 leading-relaxed">
+                  Paste or select complex emoji strings to tear down hidden subtext, cultural context across continents, and PeriSensorAI sentiment metrics.
+                </p>
+              </div>
+            </div>
+
+            {/* INPUT & PRESETS GRID */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+              {/* INPUT PANEL */}
+              <div className="lg:col-span-1 p-5 rounded-3xl bg-slate-900/80 border border-slate-800 space-y-4 shadow-xl">
+                <h3 className="text-sm font-bold text-slate-200 flex items-center justify-between">
+                  <span>Enter Emoji Sequence</span>
+                  <span className="text-[10px] text-purple-400 font-mono">Neural Sentiment</span>
+                </h3>
+
+                <div className="space-y-2">
+                  <input
+                    type="text"
+                    value={decipherInput}
+                    onChange={(e) => setDecipherInput(e.target.value)}
+                    placeholder="Paste emojis e.g. 🎃👻🕯️ or 🥺👉👈"
+                    className="w-full p-4 bg-slate-950 border border-slate-800 rounded-2xl text-xl text-center tracking-widest text-white focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                  />
+                  <button
+                    onClick={() => handleDecipher()}
+                    disabled={isDecipherLoading}
+                    className="w-full py-3.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-extrabold rounded-2xl text-xs transition-all shadow-lg flex items-center justify-center gap-2 transform active:scale-95 disabled:opacity-50"
+                  >
+                    {isDecipherLoading ? (
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Wand2 className="w-4 h-4 text-amber-300" />
+                    )}
+                    <span>{isDecipherLoading ? 'Analyzing Sentiment...' : 'Decipher Emotional Subtext'}</span>
+                  </button>
+                </div>
+
+                {/* QUICK PRESETS */}
+                <div className="space-y-2 pt-2 border-t border-slate-800">
+                  <span className="text-[11px] font-bold text-slate-400 block uppercase tracking-wider">Quick Presets:</span>
+                  <div className="grid grid-cols-3 gap-2">
+                    {Object.keys(PRESET_DECIPHERS).map((presetKey) => (
+                      <button
+                        key={presetKey}
+                        onClick={() => {
+                          setDecipherInput(presetKey);
+                          handleDecipher(presetKey);
+                        }}
+                        className="p-2.5 bg-slate-950 hover:bg-purple-950/40 border border-slate-800 hover:border-purple-500/50 rounded-xl text-sm transition-all flex items-center justify-center font-emoji"
+                      >
+                        {presetKey}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* DECIPHER RESULTS PANEL */}
+              <div className="lg:col-span-2 p-6 rounded-3xl bg-slate-900/80 border border-slate-800 space-y-6 shadow-xl relative overflow-hidden">
+                {decipherResult ? (
+                  <div className="space-y-6">
+
+                    {/* PRIMARY SENTIMENT */}
+                    <div className="p-5 rounded-2xl bg-gradient-to-r from-purple-950/60 to-indigo-950/60 border border-purple-500/30 space-y-2">
+                      <div className="flex justify-between items-center text-[10px] font-extrabold uppercase tracking-widest text-purple-300">
+                        <span>Primary Sentiment Teardown</span>
+                        <span className="px-2 py-0.5 rounded-full bg-purple-500/20">PeriSensorAI Mode</span>
+                      </div>
+                      <h3 className="text-xl font-extrabold text-white">{decipherResult.primarySentiment}</h3>
+                      <p className="text-xs md:text-sm text-slate-300 leading-relaxed italic">
+                        "{decipherResult.subtext}"
+                      </p>
+                    </div>
+
+                    {/* METRICS & CULTURAL CONTEXT */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                      {/* METRICS */}
+                      <div className="p-4 rounded-2xl bg-slate-950/60 border border-slate-800/80 space-y-3">
+                        <span className="text-xs font-bold text-slate-300 uppercase tracking-wider block">
+                          Emotional Tone & Intensity
+                        </span>
+
+                        <div className="space-y-2">
+                          <div>
+                            <div className="flex justify-between text-[11px] text-slate-400 mb-1">
+                              <span>Emotional Arousal (Energy)</span>
+                              <span className="text-purple-400 font-bold">{decipherResult.periSensorMetrics?.arousal}%</span>
+                            </div>
+                            <div className="w-full bg-slate-800 rounded-full h-2">
+                              <div className="bg-purple-500 h-2 rounded-full transition-all duration-500" style={{ width: `${decipherResult.periSensorMetrics?.arousal}%` }}></div>
+                            </div>
+                          </div>
+
+                          <div>
+                            <div className="flex justify-between text-[11px] text-slate-400 mb-1">
+                              <span>Emotional Valence (Positivity)</span>
+                              <span className="text-emerald-400 font-bold">{decipherResult.periSensorMetrics?.valence}%</span>
+                            </div>
+                            <div className="w-full bg-slate-800 rounded-full h-2">
+                              <div className="bg-emerald-500 h-2 rounded-full transition-all duration-500" style={{ width: `${decipherResult.periSensorMetrics?.valence}%` }}></div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="pt-2 border-t border-slate-800/60 flex justify-between items-center text-xs">
+                          <span className="text-slate-400">Tone Signature:</span>
+                          <span className="font-extrabold text-purple-300">{decipherResult.periSensorMetrics?.emotionalTone}</span>
+                        </div>
+                      </div>
+
+                      {/* CULTURAL CONTEXT */}
+                      <div className="p-4 rounded-2xl bg-slate-950/60 border border-slate-800/80 space-y-2">
+                        <span className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                          <Globe className="w-3.5 h-3.5 text-indigo-400" /> Cultural & Subcultural Context
+                        </span>
+                        <p className="text-xs text-slate-300 leading-relaxed">
+                          {decipherResult.culturalContext}
+                        </p>
+                      </div>
+
+                    </div>
+
+                    {/* ACTIONS */}
+                    <div className="flex items-center gap-3 pt-2">
+                      <button
+                        onClick={async () => {
+                          const textToCopy = `${decipherInput}: ${decipherResult.primarySentiment} - ${decipherResult.subtext}`;
+                          const success = await safeCopyToClipboard(textToCopy);
+                          if (success) showToast("📋 Deciphered insight copied!");
+                        }}
+                        className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5"
+                      >
+                        <Copy className="w-3.5 h-3.5" /> Copy Teardown
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setActiveTab('studio');
+                          setStudioEmojiTitle(decipherResult.primarySentiment);
+                          setStudioEmotionDescription(decipherResult.subtext);
+                        }}
+                        className="px-4 py-2 bg-purple-600/30 hover:bg-purple-600/50 text-purple-300 border border-purple-500/30 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5"
+                      >
+                        <Palette className="w-3.5 h-3.5" /> Open in Studio & Customize
+                      </button>
+                    </div>
+
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-12 text-center text-slate-500 space-y-2">
+                    <Compass className="w-12 h-12 text-slate-700 animate-pulse" />
+                    <p className="text-xs">Select or enter an emoji string to generate a sentiment teardown.</p>
+                  </div>
+                )}
+              </div>
+
+            </div>
+
+          </div>
+        )}
+
+        {/* TAB 2: EMOJI STUDIO & CUSTOM DESIGNER */}
+        {activeTab === 'studio' && (
+          <div className="space-y-6 animate-fade-in">
+
+            <div className="p-6 md:p-8 rounded-3xl bg-gradient-to-r from-pink-900/60 via-purple-900/40 to-slate-900 border border-pink-500/20 shadow-2xl relative overflow-hidden">
+              <div className="max-w-2xl space-y-3 relative z-10">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-pink-500/20 border border-pink-500/30 text-pink-300 text-xs font-extrabold uppercase tracking-wider">
+                  <Palette className="w-3.5 h-3.5" /> Interactive Layer Blender
+                </span>
+                <h2 className="text-2xl md:text-3xl font-black text-white">
+                  Emoji Studio & Hyper-Personal Designer
+                </h2>
+                <p className="text-xs md:text-sm text-slate-300 leading-relaxed">
+                  Craft custom emojis for niche emotions (*Sonder*, *Saudade*, Halloween Spookiness). Layer base tones, aura halos, eyes, and accessories.
+                </p>
+              </div>
+            </div>
+
+            {/* PRESET CHIPS */}
+            <div className="space-y-2">
+              <span className="text-xs font-extrabold uppercase tracking-wider text-slate-400 block">Niche Emotion Trait Presets:</span>
+              <div className="flex flex-wrap gap-2">
+                {STUDIO_PRESETS.map((p) => (
+                  <button
+                    key={p.id}
+                    onClick={() => applyStudioPreset(p)}
+                    className="px-3.5 py-2 bg-slate-900 hover:bg-purple-950/60 border border-slate-800 hover:border-purple-500/50 rounded-2xl text-xs font-bold text-slate-200 transition-all flex items-center gap-2 shadow-sm"
+                  >
+                    <span className="w-3 h-3 rounded-full" style={{ backgroundColor: p.baseColor }}></span>
+                    <span>{p.name}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* EDITOR MAIN CONTAINER */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+              {/* CANVAS & PREVIEW CARD */}
+              <div className="lg:col-span-1 p-6 rounded-3xl bg-slate-900/90 border border-slate-800 space-y-6 shadow-xl flex flex-col items-center justify-between text-center relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-b from-purple-500/5 to-transparent pointer-events-none"></div>
+
+                <div className="space-y-2 w-full">
+                  <span className="text-[10px] font-extrabold uppercase tracking-widest text-purple-400 block">
+                    Bespoke Visual Canvas
+                  </span>
+                  <input
+                    type="text"
+                    value={studioEmojiTitle}
+                    onChange={(e) => setStudioEmojiTitle(e.target.value)}
+                    className="w-full text-center bg-transparent text-lg font-black text-white focus:outline-none border-b border-transparent focus:border-purple-500 pb-1"
+                  />
+                </div>
+
+                {/* DYNAMIC SVG EMOJI COMPONENT */}
+                <div className="relative my-4 w-44 h-44 rounded-full flex items-center justify-center shadow-2xl transition-all duration-500 group" style={{
+                  background: `radial-gradient(circle, ${studioBaseColor}dd 0%, ${studioBaseColor}44 70%, transparent 100%)`,
+                  boxShadow: `0 0 40px ${studioBaseColor}66`
+                }}>
+
+                  {/* AURA GLOW EFFECT */}
+                  {studioAuraStyle === 'nebula' && <div className="absolute inset-0 rounded-full animate-ping opacity-20 bg-purple-500 pointer-events-none"></div>}
+                  {studioAuraStyle === 'fog' && <div className="absolute -inset-4 rounded-full bg-teal-500/20 blur-xl animate-pulse"></div>}
+                  {studioAuraStyle === 'phoenix' && <div className="absolute -inset-4 rounded-full bg-rose-500/20 blur-xl animate-pulse"></div>}
+
+                  {/* SVG EMOJI BASE */}
+                  <svg className="w-32 h-32 transform transition-transform duration-300 group-hover:scale-110" viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="45" fill={studioBaseColor} stroke="#ffffff" strokeWidth="2" />
+
+                    {/* EYES LAYER */}
+                    {studioEyeStyle === 'starry' && (
+                      <g fill="#ffffff">
+                        <polygon points="30,35 32,40 37,40 33,43 35,48 30,45 25,48 27,43 23,40 28,40" />
+                        <polygon points="70,35 72,40 77,40 73,43 75,48 70,45 65,48 67,43 63,40 68,40" />
+                      </g>
+                    )}
+                    {studioEyeStyle === 'ghostly' && (
+                      <g fill="#000000">
+                        <circle cx="30" cy="40" r="7" />
+                        <circle cx="70" cy="40" r="7" />
+                        <circle cx="30" cy="40" r="3" fill="#00ffff" />
+                        <circle cx="70" cy="40" r="3" fill="#00ffff" />
+                      </g>
+                    )}
+                    {studioEyeStyle === 'flame' && (
+                      <g fill="#f59e0b">
+                        <path d="M 25,45 Q 30,30 35,45 Z" />
+                        <path d="M 65,45 Q 70,30 75,45 Z" />
+                      </g>
+                    )}
+                    {studioEyeStyle === 'sparkle' && (
+                      <g fill="#ffffff">
+                        <circle cx="30" cy="40" r="6" />
+                        <circle cx="70" cy="40" r="6" />
+                        <circle cx="32" cy="38" r="2" fill="#000000" />
+                        <circle cx="72" cy="38" r="2" fill="#000000" />
+                      </g>
+                    )}
+
+                    {/* MOUTH LAYER */}
+                    {studioMouthStyle === 'smile' && <path d="M 30,65 Q 50,80 70,65" fill="none" stroke="#ffffff" strokeWidth="4" strokeLinecap="round" />}
+                    {studioMouthStyle === 'vamp' && (
+                      <g>
+                        <path d="M 30,62 Q 50,75 70,62" fill="none" stroke="#ffffff" strokeWidth="4" strokeLinecap="round" />
+                        <polygon points="38,64 42,72 44,64" fill="#ffffff" />
+                        <polygon points="56,64 58,72 62,64" fill="#ffffff" />
+                      </g>
+                    )}
+                    {studioMouthStyle === 'oGasp' && <circle cx="50" cy="68" r="8" fill="#ffffff" />}
+                    {studioMouthStyle === 'calm' && <line x1="35" y1="68" x2="65" y2="68" stroke="#ffffff" strokeWidth="4" strokeLinecap="round" />}
+                    {studioMouthStyle === 'tongue' && (
+                      <g>
+                        <path d="M 30,62 Q 50,78 70,62" fill="none" stroke="#ffffff" strokeWidth="4" strokeLinecap="round" />
+                        <path d="M 45,68 Q 50,80 55,68 Z" fill="#f43f5e" />
+                      </g>
+                    )}
+                  </svg>
+                </div>
+
+                <div className="space-y-2 w-full">
+                  <textarea
+                    value={studioEmotionDescription}
+                    onChange={(e) => setStudioEmotionDescription(e.target.value)}
+                    rows="2"
+                    className="w-full bg-slate-950/60 p-2.5 rounded-xl border border-slate-800 text-xs text-slate-300 italic text-center focus:outline-none"
+                  />
+
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleDownloadCard}
+                      className="flex-1 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl text-xs font-bold shadow-md hover:opacity-95 transition-all flex items-center justify-center gap-1.5"
+                    >
+                      <Download className="w-3.5 h-3.5" /> Download HTML Card
+                    </button>
+                  </div>
+                </div>
+
+              </div>
+
+              {/* CONTROLS & AI SYNTHESIZER */}
+              <div className="lg:col-span-2 p-6 rounded-3xl bg-slate-900/90 border border-slate-800 space-y-6 shadow-xl">
+
+                <div className="flex justify-between items-center border-b border-slate-800 pb-3">
+                  <h3 className="text-sm font-bold text-slate-200 flex items-center gap-2">
+                    <Sliders className="w-4 h-4 text-pink-400" /> Custom Layer Controls
+                  </h3>
+
+                  <button
+                    onClick={handleAIGenerateStudio}
+                    disabled={isStudioGenerating}
+                    className="px-3 py-1.5 bg-gradient-to-r from-pink-600 to-purple-600 text-white font-extrabold rounded-xl text-xs shadow-md hover:brightness-110 transition-all flex items-center gap-1.5"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                    <span>{isStudioGenerating ? 'Synthesizing AI Emoji...' : 'AI Synthesize Emoji'}</span>
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+                  {/* BASE COLOR */}
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-slate-400 block uppercase tracking-wider">Base Spectrum Tone:</label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={studioBaseColor}
+                        onChange={(e) => setStudioBaseColor(e.target.value)}
+                        className="w-10 h-10 rounded-xl bg-slate-950 border border-slate-800 cursor-pointer"
+                      />
+                      <span className="text-xs font-mono text-slate-300">{studioBaseColor}</span>
+                    </div>
+                  </div>
+
+                  {/* EYE STYLE */}
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-slate-400 block uppercase tracking-wider">Eye Expression:</label>
+                    <select
+                      value={studioEyeStyle}
+                      onChange={(e) => setStudioEyeStyle(e.target.value)}
+                      className="w-full p-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:ring-2 focus:ring-purple-500"
+                    >
+                      <option value="starry">Starry Vision (Sonder)</option>
+                      <option value="ghostly">Ghostly Glow (Spooky)</option>
+                      <option value="flame">Fiery Passion (Duende)</option>
+                      <option value="sparkle">Sparkling Joy</option>
+                    </select>
+                  </div>
+
+                  {/* MOUTH STYLE */}
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-slate-400 block uppercase tracking-wider">Mouth & Mood:</label>
+                    <select
+                      value={studioMouthStyle}
+                      onChange={(e) => setStudioMouthStyle(e.target.value)}
+                      className="w-full p-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:ring-2 focus:ring-purple-500"
+                    >
+                      <option value="smile">Warm Smile</option>
+                      <option value="vamp">Vampire Fangs (Halloween)</option>
+                      <option value="oGasp">Awe & Gasp</option>
+                      <option value="calm">Serene Calm</option>
+                      <option value="tongue">Playful Tongue</option>
+                    </select>
+                  </div>
+
+                  {/* AURA STYLE */}
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-slate-400 block uppercase tracking-wider">Atmospheric Aura Effect:</label>
+                    <select
+                      value={studioAuraStyle}
+                      onChange={(e) => setStudioAuraStyle(e.target.value)}
+                      className="w-full p-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:ring-2 focus:ring-purple-500"
+                    >
+                      <option value="nebula">Cosmic Nebula Pulse</option>
+                      <option value="fog">Eerie Autumn Fog</option>
+                      <option value="phoenix">Fiery Phoenix Radiance</option>
+                    </select>
+                  </div>
+
+                </div>
+
+              </div>
+
+            </div>
+
+          </div>
+        )}
+
+        {/* TAB 3: THEMED LIBRARIES */}
+        {activeTab === 'library' && (
+          <div className="space-y-6 animate-fade-in">
+
+            <div className="p-6 md:p-8 rounded-3xl bg-gradient-to-r from-indigo-900/60 via-purple-900/40 to-slate-900 border border-indigo-500/20 shadow-2xl relative overflow-hidden">
+              <div className="max-w-2xl space-y-3 relative z-10">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 text-xs font-extrabold uppercase tracking-wider">
+                  <Bookmark className="w-3.5 h-3.5" /> Universal Emotional Language (UEL)
+                </span>
+                <h2 className="text-2xl md:text-3xl font-black text-white">
+                  Categorized Emoji Collections & Libraries
+                </h2>
+                <p className="text-xs md:text-sm text-slate-300 leading-relaxed">
+                  Browse curated collections for Spooky Halloween, Holidays, Spiritual Solstice, and Niche Feelings. One-click copy or inspect in Studio.
+                </p>
+              </div>
+            </div>
+
+            {/* SEARCH & CATEGORY FILTER */}
+            <div className="flex flex-col md:flex-row gap-4 justify-between items-center bg-slate-900/80 p-4 rounded-2xl border border-slate-800">
+
+              <div className="relative w-full md:w-80">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                <input
+                  type="text"
+                  placeholder="Search emojis or feelings..."
+                  value={librarySearch}
+                  onChange={(e) => setLibrarySearch(e.target.value)}
+                  className="w-full pl-9 pr-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
+
+              <div className="flex flex-wrap gap-2 w-full md:w-auto">
+                <button
+                  onClick={() => setActiveLibCategory('all')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                    activeLibCategory === 'all' ? 'bg-purple-600 text-white' : 'bg-slate-950 text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  All Categories
+                </button>
+                {THEMED_LIBRARIES.map((lib) => (
+                  <button
+                    key={lib.id}
+                    onClick={() => setActiveLibCategory(lib.id)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                      activeLibCategory === lib.id ? 'bg-purple-600 text-white' : 'bg-slate-950 text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    {lib.title.split(' ')[0]} {lib.title.split(' ')[1]}
+                  </button>
+                ))}
+              </div>
+
+            </div>
+
+            {/* LIBRARIES GRID */}
+            <div className="space-y-8">
+              {THEMED_LIBRARIES.filter(lib => activeLibCategory === 'all' || activeLibCategory === lib.id).map((category) => {
+                const filteredItems = category.items.filter(item =>
+                  item.name.toLowerCase().includes(librarySearch.toLowerCase()) ||
+                  item.emotion.toLowerCase().includes(librarySearch.toLowerCase()) ||
+                  item.emoji.includes(librarySearch)
+                );
+
+                if (filteredItems.length === 0) return null;
+
+                return (
+                  <div key={category.id} className="space-y-3">
+                    <div className="border-b border-slate-800/80 pb-2 flex justify-between items-baseline">
+                      <h3 className="text-lg font-black text-white flex items-center gap-2">
+                        {category.title}
+                      </h3>
+                      <span className="text-xs text-slate-400 font-medium">{category.subtitle}</span>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {filteredItems.map((item, idx) => (
+                        <div
+                          key={idx}
+                          className="p-4 rounded-2xl bg-slate-900/80 hover:bg-slate-900 border border-slate-800/80 hover:border-purple-500/40 transition-all duration-300 space-y-3 shadow-md group"
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="text-3xl font-emoji p-2 bg-slate-950 rounded-xl border border-slate-800/60 group-hover:scale-110 transition-transform">
+                              {item.emoji}
+                            </span>
+                            <span className="text-[10px] uppercase font-bold text-purple-400 bg-purple-500/10 px-2 py-1 rounded-full border border-purple-500/20">
+                              {item.emotion}
+                            </span>
+                          </div>
+
+                          <div>
+                            <h4 className="text-sm font-bold text-white">{item.name}</h4>
+                            <p className="text-xs text-slate-400 leading-relaxed mt-1">{item.description}</p>
+                          </div>
+
+                          <div className="flex items-center gap-2 pt-2 border-t border-slate-800/60">
+                            <button
+                              onClick={async () => {
+                                const success = await safeCopyToClipboard(item.emoji);
+                                if (success) {
+                                  showToast(`📋 Copied ${item.emoji} to clipboard!`);
+                                  addJoyOrbs(5, "Sharing UEL Emoji");
+                                }
+                              }}
+                              className="flex-1 py-1.5 bg-slate-950 hover:bg-slate-800 text-slate-300 rounded-xl text-[11px] font-bold transition-all flex items-center justify-center gap-1"
+                            >
+                              <Copy className="w-3 h-3" /> Copy
+                            </button>
+
+                            <button
+                              onClick={() => {
+                                setDecipherInput(item.emoji);
+                                setActiveTab('decipher');
+                                handleDecipher(item.emoji);
+                              }}
+                              className="px-3 py-1.5 bg-purple-600/20 hover:bg-purple-600/40 text-purple-300 rounded-xl text-[11px] font-bold transition-all"
+                            >
+                              Decipher
+                            </button>
+                          </div>
+
+                        </div>
+                      ))}
+                    </div>
+
+                  </div>
+                );
+              })}
+            </div>
+
+          </div>
+        )}
+
+        {/* TAB 4: UEL TRANSLATOR */}
+        {activeTab === 'translator' && (
+          <div className="space-y-6 animate-fade-in">
+
+            <div className="p-6 md:p-8 rounded-3xl bg-gradient-to-r from-emerald-900/60 via-teal-900/40 to-slate-900 border border-emerald-500/20 shadow-2xl relative overflow-hidden">
+              <div className="max-w-2xl space-y-3 relative z-10">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs font-extrabold uppercase tracking-wider">
+                  <Globe className="w-3.5 h-3.5" /> International UEL Bridge
+                </span>
+                <h2 className="text-2xl md:text-3xl font-black text-white">
+                  Cross-Cultural Emoji Translator
+                </h2>
+                <p className="text-xs md:text-sm text-slate-300 leading-relaxed">
+                  Bridge global communication divides by converting text or mood states into culturally nuanced emoji sequences with localized tone notes.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+              {/* INPUT PANEL */}
+              <div className="p-6 rounded-3xl bg-slate-900/80 border border-slate-800 space-y-4 shadow-xl">
+                <h3 className="text-sm font-bold text-slate-200 flex items-center justify-between">
+                  <span>Your Text or Mood Statement</span>
+                  <span className="text-[10px] text-emerald-400 font-mono">Cross-Cultural</span>
+                </h3>
+
+                <textarea
+                  rows="4"
+                  value={translatorInput}
+                  onChange={(e) => setTranslatorInput(e.target.value)}
+                  placeholder="Type how you feel or what you want to communicate across language barriers..."
+                  className="w-full p-4 bg-slate-950 border border-slate-800 rounded-2xl text-xs text-slate-200 focus:ring-2 focus:ring-emerald-500 focus:outline-none resize-none"
+                />
+
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Target Regional Dialect / Market Context:</label>
+                  <select
+                    value={translatorRegion}
+                    onChange={(e) => setTranslatorRegion(e.target.value)}
+                    className="w-full p-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:ring-2 focus:ring-emerald-500"
+                  >
+                    <option value="Global Universal">Global Universal (Cross-Continental Bridge)</option>
+                    <option value="East Asian High-Context">East Asian High-Context (Japan / Korea / China)</option>
+                    <option value="Latin American Expressive">Latin American Expressive</option>
+                    <option value="Middle Eastern Warmth">Middle Eastern Warmth & Hospitality</option>
+                    <option value="Gen-Z / Internet Culture">Gen-Z / Digital Subculture</option>
+                  </select>
+                </div>
+
+                <button
+                  onClick={handleTranslateText}
+                  disabled={isTranslating}
+                  className="w-full py-3.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold rounded-2xl text-xs transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {isTranslating ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Globe className="w-4 h-4" />}
+                  <span>{isTranslating ? 'Translating to UEL Sequence...' : 'Translate to Cross-Cultural Emojis'}</span>
+                </button>
+              </div>
+
+              {/* OUTPUT TRANSLATION PANEL */}
+              <div className="p-6 rounded-3xl bg-slate-900/80 border border-slate-800 space-y-6 shadow-xl flex flex-col justify-between">
+
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center text-[10px] uppercase font-extrabold tracking-widest text-emerald-400">
+                    <span>Universal Emotional Translation</span>
+                    <span className="bg-emerald-500/20 px-2 py-0.5 rounded-full border border-emerald-500/30">{translatorRegion}</span>
+                  </div>
+
+                  <div className="p-6 rounded-2xl bg-slate-950 border border-slate-800/80 text-center space-y-2">
+                    <span className="text-xs font-bold text-slate-400 block uppercase tracking-wider">Bridge Sequence:</span>
+                    <div className="text-3xl md:text-4xl font-emoji tracking-widest text-white py-2">
+                      {translatorOutput?.emojiSequence || "🌧️☕🧦🔥"}
+                    </div>
+                  </div>
+
+                  <div className="p-4 rounded-2xl bg-slate-950/60 border border-slate-800/80 space-y-2">
+                    <span className="text-xs font-bold text-slate-300 uppercase tracking-wider block">
+                      Cross-Cultural Nuance & Tone Notes:
+                    </span>
+                    <p className="text-xs text-slate-300 leading-relaxed">
+                      {translatorOutput?.explanation}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex gap-2 pt-4 border-t border-slate-800">
+                  <button
+                    onClick={async () => {
+                      const text = `${translatorOutput?.emojiSequence} (${translatorInput})`;
+                      const success = await safeCopyToClipboard(text);
+                      if (success) {
+                        showToast("📋 UEL sequence copied!");
+                        addJoyOrbs(10, "Copying UEL Translation");
+                      }
+                    }}
+                    className="flex-1 py-2.5 bg-emerald-600/20 hover:bg-emerald-600/40 text-emerald-300 border border-emerald-500/30 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5"
+                  >
+                    <Copy className="w-3.5 h-3.5" /> Copy UEL Bridge
+                  </button>
+                </div>
+
+              </div>
+
+            </div>
+
+          </div>
+        )}
+
       </main>
 
-      <ApiKeyModal isOpen={isApiKeyModalOpen} onClose={() => setIsApiKeyModalOpen(false)} />
+      {/* GEMINI SERVICE CONFIG MODAL */}
+      {isApiKeyModalOpen && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4">
+
+            <div className="flex justify-between items-center border-b border-slate-800 pb-3">
+              <div className="flex items-center space-x-2 text-amber-400 font-bold text-sm">
+                <Key className="w-4 h-4" />
+                <span>Service Token Configuration</span>
+              </div>
+              <button onClick={() => setIsApiKeyModalOpen(false)} className="p-1 text-slate-400 hover:text-white bg-slate-800 rounded-full">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-300 leading-relaxed">
+              Configure your Google Gemini service token to enable live neural emoji deciphering, AI custom emoji synthesis, and cross-cultural translations. Offline fallbacks work automatically if no token is supplied!
+            </p>
+
+            <div className="space-y-1">
+              <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
+                Service Configuration Token String
+              </label>
+              <input
+                type="password"
+                value={userCredentialVal}
+                onChange={(e) => setUserCredentialVal(e.target.value)}
+                placeholder="AIzaSy..."
+                className="w-full p-3 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 font-mono focus:ring-2 focus:ring-purple-500 focus:outline-none"
+              />
+            </div>
+
+            <div className="flex space-x-2 pt-2">
+              <button
+                onClick={() => setIsApiKeyModalOpen(false)}
+                className="flex-1 py-2.5 bg-slate-800 text-slate-300 font-semibold rounded-xl text-xs hover:bg-slate-700 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveApiKey}
+                className="flex-1 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-semibold rounded-xl text-xs hover:opacity-95 transition-all shadow-md"
+              >
+                Save Token
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* FOOTER */}
+      <footer className="border-t border-slate-800/60 bg-slate-950 py-6 px-4 text-center text-xs text-slate-500">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-2">
+          <span>✨ Emoji Extravaganza • Universal Emotional Language (UEL) Studio</span>
+          <span>Powered by Gemini 2.5 Flash & PeriSensorAI Sentiment Engine</span>
+        </div>
+      </footer>
+
     </div>
   );
 }
