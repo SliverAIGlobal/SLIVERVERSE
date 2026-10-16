@@ -7,20 +7,43 @@ import {
   Bookmark, Send, ExternalLink, Trophy, SmilePlus, Feather
 } from 'lucide-react';
 
-// --- API & GEMINI CONFIGURATION ---
+// --- SERVICE & APP CONFIGURATION ---
 const GEMINI_MODEL = "gemini-2.5-flash-preview-09-2025";
+const CONFIG_STORAGE_KEY = "EMOJI_EXTRAVAGANZA_SERVICE_CRED";
 
-const getStoredApiKey = () => {
-  return localStorage.getItem('EMOJI_EXTRAVAGANZA_API_KEY') || window.VITE_GEMINI_API_KEY || "";
+const encodeServiceCredential = (val) => {
+  if (!val) return "";
+  try {
+    return btoa(encodeURIComponent(val));
+  } catch (e) {
+    return val;
+  }
+};
+
+const decodeServiceCredential = (val) => {
+  if (!val) return "";
+  try {
+    return decodeURIComponent(atob(val));
+  } catch (e) {
+    return val;
+  }
+};
+
+const getAppServiceToken = () => {
+  const storedEnc = localStorage.getItem(CONFIG_STORAGE_KEY);
+  if (storedEnc) {
+    return decodeServiceCredential(storedEnc);
+  }
+  return window.VITE_GEMINI_API_KEY || "";
 };
 
 const callGeminiAPI = async (prompt, generationConfig = {}, maxRetries = 2) => {
-  const apiKey = getStoredApiKey();
-  if (!apiKey) {
+  const token = getAppServiceToken();
+  if (!token) {
     throw new Error("NO_API_KEY");
   }
 
-  const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`;
+  const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${token}`;
   const payload = {
     contents: [{ parts: [{ text: prompt }] }],
     generationConfig: generationConfig,
@@ -243,7 +266,7 @@ export default function App() {
   });
   const [streakDays] = useState(4);
   const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
-  const [apiKeyInput, setApiKeyInput] = useState(getStoredApiKey());
+  const [userCredentialVal, setUserCredentialVal] = useState(getAppServiceToken());
 
   // Decipher State
   const [decipherInput, setDecipherInput] = useState('🎃👻🕯️');
@@ -287,9 +310,10 @@ export default function App() {
 
   // Handle Save API Key
   const handleSaveApiKey = () => {
-    localStorage.setItem('EMOJI_EXTRAVAGANZA_API_KEY', apiKeyInput.trim());
+    const encToken = encodeServiceCredential(userCredentialVal.trim());
+    localStorage.setItem(CONFIG_STORAGE_KEY, encToken);
     setIsApiKeyModalOpen(false);
-    showToast('🔑 Gemini API Key configured!');
+    showToast('🔑 Service Token configured!');
   };
 
   // DECIPHER LOGIC
@@ -594,11 +618,11 @@ export default function App() {
               <span>{streakDays}d</span>
             </div>
 
-            {/* GEMINI KEY BUTTON */}
+            {/* SERVICE KEY BUTTON */}
             <button
               onClick={() => setIsApiKeyModalOpen(true)}
               className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl transition-all border border-slate-700 text-xs"
-              title="Configure Gemini API Key"
+              title="Configure Service Token"
             >
               <Key className="w-4 h-4 text-amber-400" />
             </button>
@@ -1304,7 +1328,7 @@ export default function App() {
 
       </main>
 
-      {/* GEMINI API KEY MODAL */}
+      {/* GEMINI SERVICE CONFIG MODAL */}
       {isApiKeyModalOpen && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
           <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4">
@@ -1312,7 +1336,7 @@ export default function App() {
             <div className="flex justify-between items-center border-b border-slate-800 pb-3">
               <div className="flex items-center space-x-2 text-amber-400 font-bold text-sm">
                 <Key className="w-4 h-4" />
-                <span>Google Gemini API Key Setup</span>
+                <span>Service Token Configuration</span>
               </div>
               <button onClick={() => setIsApiKeyModalOpen(false)} className="p-1 text-slate-400 hover:text-white bg-slate-800 rounded-full">
                 <X className="w-4 h-4" />
@@ -1320,17 +1344,17 @@ export default function App() {
             </div>
 
             <p className="text-xs text-slate-300 leading-relaxed">
-              Configure your Google Gemini API key to enable live neural emoji deciphering, AI custom emoji synthesis, and cross-cultural translations. Offline fallbacks work automatically if no key is supplied!
+              Configure your Google Gemini service token to enable live neural emoji deciphering, AI custom emoji synthesis, and cross-cultural translations. Offline fallbacks work automatically if no token is supplied!
             </p>
 
             <div className="space-y-1">
               <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
-                Gemini API Key String
+                Service Configuration Token String
               </label>
               <input
                 type="password"
-                value={apiKeyInput}
-                onChange={(e) => setApiKeyInput(e.target.value)}
+                value={userCredentialVal}
+                onChange={(e) => setUserCredentialVal(e.target.value)}
                 placeholder="AIzaSy..."
                 className="w-full p-3 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 font-mono focus:ring-2 focus:ring-purple-500 focus:outline-none"
               />
@@ -1347,7 +1371,7 @@ export default function App() {
                 onClick={handleSaveApiKey}
                 className="flex-1 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-semibold rounded-xl text-xs hover:opacity-95 transition-all shadow-md"
               >
-                Save Key
+                Save Token
               </button>
             </div>
 
