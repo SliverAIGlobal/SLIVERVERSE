@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   HeartHandshake, Sparkles, Sliders, ShieldCheck, Key, Code, Activity,
-  Volume2, EyeOff, UserCheck, RefreshCw, Info, Waves
+  Volume2, EyeOff, UserCheck, RefreshCw, Info, Waves, Layers
 } from 'lucide-react';
 
 import FluidCanvas from './components/FluidCanvas';
@@ -13,6 +13,7 @@ import KineticShiftHandoff from './components/KineticShiftHandoff';
 import VerticalAdapters from './components/VerticalAdapters';
 import DeveloperSDKModal from './components/DeveloperSDKModal';
 import SettingsModal from './components/SettingsModal';
+import SalesKineticMode from './components/adapters/SalesKineticMode';
 
 import AudioResonator from './engine/audioEngine';
 
@@ -37,11 +38,13 @@ export default function App() {
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-slate-950 text-slate-100 font-sans select-none">
       {/* 1. BACKGROUND FLUID CANVAS OVERLAY */}
-      <FluidCanvas
-        stressLevel={stressLevel}
-        onPointerDown={handlePointerDown}
-        className="absolute inset-0 z-0 pointer-events-auto"
-      />
+      {activeAdapter !== 'salesKinetic' && (
+        <FluidCanvas
+          stressLevel={stressLevel}
+          onPointerDown={handlePointerDown}
+          className="absolute inset-0 z-0 pointer-events-auto"
+        />
+      )}
 
       {/* 2. HEADER BAR */}
       <header className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-6 py-4 bg-slate-900/60 backdrop-blur-md border-b border-slate-800/80 pointer-events-auto">
@@ -138,8 +141,15 @@ export default function App() {
           </div>
         )}
 
+        {/* B2B SALESKINETIC ENHANCER SUITE */}
+        {activeAdapter === 'salesKinetic' && (
+          <div className="pointer-events-auto max-w-7xl mx-auto w-full my-auto">
+            <SalesKineticMode />
+          </div>
+        )}
+
         {/* OTHER INDUSTRY SHOWCASE MODES */}
-        {activeAdapter !== 'careKinetic' && (
+        {activeAdapter !== 'careKinetic' && activeAdapter !== 'salesKinetic' && (
           <div className="p-8 rounded-3xl bg-slate-900/90 backdrop-blur-xl border border-slate-800 shadow-2xl max-w-2xl mx-auto w-full pointer-events-auto text-center my-auto space-y-4">
             <div className="inline-flex p-3 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-400">
               <Waves className="w-8 h-8 animate-pulse" />

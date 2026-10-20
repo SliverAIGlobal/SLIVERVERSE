@@ -1,5 +1,5 @@
 import React from 'react';
-import { HeartHandshake, Compass, LineChart, Car, Stethoscope } from 'lucide-react';
+import { HeartHandshake, Layers, Compass, LineChart, Car, Stethoscope } from 'lucide-react';
 
 export default function VerticalAdapters({ activeAdapter, onSelectAdapter }) {
   const adapters = [
@@ -8,15 +8,20 @@ export default function VerticalAdapters({ activeAdapter, onSelectAdapter }) {
       name: 'CareKinetic',
       tagline: 'DOA Caregiver Challenge',
       icon: HeartHandshake,
-      color: 'emerald',
       desc: 'Stress diffusion, blind gesture controls, and Solfeggio microtonal grounding.'
+    },
+    {
+      id: 'salesKinetic',
+      name: 'B2B SalesKinetic',
+      tagline: 'Sales Enhancer SDK',
+      icon: Layers,
+      desc: 'Hybrid offline-first WASM sales enhancer & client-side e-signature.'
     },
     {
       id: 'mindState',
       name: 'MindState',
       tagline: 'Consumer Grounding',
       icon: Compass,
-      color: 'purple',
       desc: 'Ambient 10-second sensory reset & cortisol lowering UI.'
     },
     {
@@ -24,7 +29,6 @@ export default function VerticalAdapters({ activeAdapter, onSelectAdapter }) {
       name: 'Fintech Depth',
       tagline: 'Risk & Order-Book',
       icon: LineChart,
-      color: 'amber',
       desc: 'Market liquidity & volatility visualized as viscous liquid drag.'
     },
     {
@@ -32,7 +36,6 @@ export default function VerticalAdapters({ activeAdapter, onSelectAdapter }) {
       name: 'AutoCockpit',
       tagline: 'EV Blind HUD',
       icon: Car,
-      color: 'blue',
       desc: '100% blind tactile gesture console for vehicle cockpits.'
     },
     {
@@ -40,13 +43,12 @@ export default function VerticalAdapters({ activeAdapter, onSelectAdapter }) {
       name: 'Tele-Robotics',
       tagline: 'Medical Force-Feedback',
       icon: Stethoscope,
-      color: 'rose',
       desc: 'Tissue resistance & micro-tremor mapping for remote surgery.'
     }
   ];
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+    <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
       {adapters.map((item) => {
         const Icon = item.icon;
         const isSelected = activeAdapter === item.id;

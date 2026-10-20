@@ -1,0 +1,40 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# Redirects for Single Page Application (SPA) Routing
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Global Security & WASM Performance Headers
+[[headers]]
+  for = "/*"
+  [headers.values]
+    # Cross-Origin Isolation headers for WebAssembly SharedArrayBuffer support
+    Cross-Origin-Opener-Policy = "same-origin"
+    Cross-Origin-Embedder-Policy = "require-corp"
+
+    # Security & Privacy Headers
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    X-XSS-Protection = "1; mode=block"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "accelerometer=(), camera=(), gyroscope=(), microphone=()"
+
+# Cache Control for Static Assets
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Cache Control for WebAssembly Modules
+[[headers]]
+  for = "*.wasm"
+  [headers.values]
+    Content-Type = "application/wasm"
+    Cache-Control = "public, max-age=31536000, immutable"
