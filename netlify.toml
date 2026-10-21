@@ -14,9 +14,15 @@
     Cross-Origin-Embedder-Policy = "require-corp"
     X-Frame-Options = "DENY"
     X-Content-Type-Options = "nosniff"
-    Referrer-Policy = "strict-origin-when-cross-origin"
+    Content-Security-Policy = "default-src 'self' 'unsafe-inline' 'unsafe-eval' https: data: blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://gumroad.com https://generativelanguage.googleapis.com; frame-src https://gumroad.com;"
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
+    X-SIPES-SAT-VERIFIED = "2026-10-20-0.998"
+    X-License-Type = "P2P-Developer-Resale"
     X-SLIAIDE-Node = "SLIAIDE-MAIN-709A"
     X-SLIAIDE-Operator = "Heather Soares"
     X-SLIAIDE-Epoch = "2026-10-20"
     X-SLIAIDE-Tx-Threshold = "0.9950"
-    X-Gumroad-Resale-License = "P2P-DEVELOPER-PERPETUAL"
+
+[[edge_functions]]
+  function = "license-validator"
+  path = "/deploy/*"
