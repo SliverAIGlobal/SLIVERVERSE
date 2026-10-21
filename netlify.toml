@@ -7,22 +7,18 @@
   to = "/index.html"
   status = 200
 
+[[edge_functions]]
+  function = "license-validator"
+  path = "/*"
+
 [[headers]]
   for = "/*"
   [headers.values]
     Cross-Origin-Opener-Policy = "same-origin"
     Cross-Origin-Embedder-Policy = "require-corp"
-    X-Frame-Options = "DENY"
-    X-Content-Type-Options = "nosniff"
-    Content-Security-Policy = "default-src 'self' 'unsafe-inline' 'unsafe-eval' https: data: blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://gumroad.com https://generativelanguage.googleapis.com; frame-src https://gumroad.com;"
-    Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
-    X-SIPES-SAT-VERIFIED = "2026-10-20-0.998"
-    X-License-Type = "P2P-Developer-Resale"
+    X-Gumroad-P2P-Compliance = "true"
+    X-SAT-AI-Verification = "T(x)=0.998"
+    Content-Security-Policy = "upgrade-insecure-requests; block-all-mixed-content;"
     X-SLIAIDE-Node = "SLIAIDE-MAIN-709A"
     X-SLIAIDE-Operator = "Heather Soares"
     X-SLIAIDE-Epoch = "2026-10-20"
-    X-SLIAIDE-Tx-Threshold = "0.9950"
-
-[[edge_functions]]
-  function = "license-validator"
-  path = "/deploy/*"
