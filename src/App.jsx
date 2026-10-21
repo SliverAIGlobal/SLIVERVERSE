@@ -3,10 +3,10 @@ import {
   Terminal, ShieldCheck, Activity, Volume2, VolumeX, Radio, Zap,
   Settings, Download, RefreshCw, Sliders, Cpu, Thermometer, Sun,
   Globe, Lock, Unlock, Key, Check, X, HelpCircle, Info, Sparkles,
-  Trophy, AlertTriangle, Play, RotateCcw, Award, Flame, Disc
+  Trophy, AlertTriangle, Play, RotateCcw, Award, Flame, Disc, Timer, Clock
 } from 'lucide-react';
 
-// --- GAME CONFIGURATION ---
+// --- GAME EDITOR CONFIGURATION ---
 const ENGINE_CONFIG = {
   GAME_TITLE: "Sovereign Protocol",
   GENRE: "Cyberpunk Neon Puzzle",
@@ -16,6 +16,11 @@ const ENGINE_CONFIG = {
   TARGET_PIPELINES: 10,
   TX_WIN_THRESHOLD: 0.9950,
   TX_LOSE_THRESHOLD: 0.8500,
+  BASE_ENTROPY_DECAY_RATE: 0.0016, // per sec
+  PHASE_LOCK_SURGE_BONUS: 0.0065,   // +T(x)
+  DIRECTIVE_COOLDOWN_MS: 2500,     // 2.5s
+  DEFAULT_MUSIC_VOLUME: 0.18,       // Gain level
+  TOURNAMENT_ROUNDS: 3,             // 3 Rounds
   F0_TARGET: 432
 };
 
@@ -50,43 +55,11 @@ const getAppServiceToken = () => {
   return window.VITE_GEMINI_API_KEY || "";
 };
 
-const callGeminiAPI = async (prompt, generationConfig = {}, maxRetries = 2) => {
-  const token = getAppServiceToken();
-  if (!token) throw new Error("NO_API_KEY");
-
-  const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${token}`;
-  const payload = {
-    contents: [{ parts: [{ text: prompt }] }],
-    generationConfig: generationConfig,
-  };
-
-  let attempt = 0;
-  while (attempt < maxRetries) {
-    try {
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      if (!response.ok) throw new Error(`Status: ${response.status}`);
-      const result = await response.json();
-      if (result.candidates && result.candidates[0]?.content?.parts[0]?.text) {
-        return result.candidates[0].content.parts[0].text;
-      } else {
-        throw new Error("Invalid structure");
-      }
-    } catch (error) {
-      attempt++;
-      if (attempt >= maxRetries) throw error;
-      await new Promise(res => setTimeout(res, 600 * attempt));
-    }
-  }
-};
-
 export default function App() {
-  // GAME STATES
-  const [gameState, setGameState] = useState('PLAYING'); // PLAYING, WON, LOST
+  // GAME EDITOR STATES
+  const [gameState, setGameState] = useState('PLAYING'); // PLAYING, WON, LOST, TOURNAMENT_WIN
   const [consecutivePipelines, setConsecutivePipelines] = useState(0);
+  const [currentRound, setCurrentRound] = useState(1);
   const [txStability, setTxStability] = useState(0.9984);
   const [entropy, setEntropy] = useState(12.4); // Entropy percentage
   const [harmonicFreq, setHarmonicFreq] = useState(432);
@@ -96,6 +69,7 @@ export default function App() {
   const [input, setInput] = useState('');
   const [smProgress, setSmProgress] = useState(0); // 0-9
   const [isProcessing, setIsProcessing] = useState(false);
+  const [cooldownTime, setCooldownTime] = useState(0); // ms remaining
 
   // Puzzle Spectrum Sliders (Player inputs) vs Target Sliders
   const [playerSpectrum, setPlayerSpectrum] = useState([50, 50, 50, 50, 50, 50, 50]);
@@ -105,9 +79,9 @@ export default function App() {
 
   // System Logs
   const [logs, setLogs] = useState([
-    { ts: "00:00:00", type: "SYS", msg: "SOVEREIGN PROTOCOL :: 3-TIER SPECTRAL SYSTEM INITIALIZED.", tx: 1.0000 },
-    { ts: "00:00:01", type: "GOAL", msg: "CALIBRATE 10 CONSECUTIVE 9SM PIPELINES ABOVE T(x) ≥ 0.9950 TO WIN.", tx: 0.9998 },
-    { ts: "00:00:02", type: "WARN", msg: "WARNING: T(x) < 0.8500 CAUSES SYSTEMIC ENTROPY COLLAPSE.", tx: 0.9950 }
+    { ts: "00:00:00", type: "SYS", msg: `SOVEREIGN PROTOCOL TOURNAMENT (ROUND 1/${ENGINE_CONFIG.TOURNAMENT_ROUNDS}) INITIALIZED.`, tx: 1.0000 },
+    { ts: "00:00:01", type: "GOAL", msg: `TARGET STREAK: ${ENGINE_CONFIG.TARGET_PIPELINES} PIPELINES ABOVE T(x) ≥ ${ENGINE_CONFIG.TX_WIN_THRESHOLD}.`, tx: 0.9998 },
+    { ts: "00:00:02", type: "WARN", msg: `CRITICAL COLLAPSE THRESHOLD: T(x) < ${ENGINE_CONFIG.TX_LOSE_THRESHOLD}.`, tx: 0.9950 }
   ]);
 
   const logEndRef = useRef(null);
@@ -122,7 +96,40 @@ export default function App() {
     setTimeout(() => setToastMsg(''), 3000);
   };
 
-  // REAL-TIME SOLFEGGIO PHASE DETUNING AUDIO FEEDBACK
+  // REAL-TIME BASE ENTROPY DECAY TIMER (0.0016% / SEC)
+  useEffect(() => {
+    if (gameState !== 'PLAYING') return;
+
+    const timer = setInterval(() => {
+      setEntropy(prev => {
+        const updated = prev + (ENGINE_CONFIG.BASE_ENTROPY_DECAY_RATE * 100);
+        return Math.min(100, updated);
+      });
+
+      // Slowly decay T(x) slightly due to entropy drift
+      setTxStability(prev => {
+        const newTx = prev - 0.00005;
+        if (newTx < ENGINE_CONFIG.TX_LOSE_THRESHOLD) {
+          setGameState('LOST');
+          showToast('💀 SYSTEM ENTROPY COLLAPSE!');
+        }
+        return Math.max(0, newTx);
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [gameState]);
+
+  // DIRECTIVE COOLDOWN TIMER (2500ms)
+  useEffect(() => {
+    if (cooldownTime <= 0) return;
+    const interval = setInterval(() => {
+      setCooldownTime(prev => Math.max(0, prev - 100));
+    }, 100);
+    return () => clearInterval(interval);
+  }, [cooldownTime]);
+
+  // REAL-TIME SOLFEGGIO PHASE DETUNING AUDIO FEEDBACK (Volume 0.18)
   const toggleAudioResonator = () => {
     if (!audioActive) {
       try {
@@ -130,20 +137,18 @@ export default function App() {
         const ctx = new AudioCtx();
         audioCtxRef.current = ctx;
 
-        // Primary Carrier Oscillator (432Hz)
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.type = 'sine';
         osc.frequency.setValueAtTime(harmonicFreq, ctx.currentTime);
-        gain.gain.setValueAtTime(0.015, ctx.currentTime);
+        gain.gain.setValueAtTime(ENGINE_CONFIG.DEFAULT_MUSIC_VOLUME, ctx.currentTime);
 
-        // Secondary Phase Detune Beat Oscillator
         const detuneOsc = ctx.createOscillator();
         const detuneGain = ctx.createGain();
         detuneOsc.type = 'sine';
         const phaseOffset = Math.abs(harmonicFreq - ENGINE_CONFIG.F0_TARGET);
         detuneOsc.frequency.setValueAtTime(ENGINE_CONFIG.F0_TARGET + phaseOffset, ctx.currentTime);
-        detuneGain.gain.setValueAtTime(phaseOffset > 2 ? 0.012 : 0.002, ctx.currentTime);
+        detuneGain.gain.setValueAtTime(phaseOffset > 2 ? 0.08 : 0.01, ctx.currentTime);
 
         osc.connect(gain);
         gain.connect(ctx.destination);
@@ -156,7 +161,7 @@ export default function App() {
         oscRef.current = osc;
         detuneOscRef.current = detuneOsc;
         setAudioActive(true);
-        showToast(`🔊 432Hz Solfeggio Audio Resonator Active`);
+        showToast(`🔊 Audio Resonator Active (Volume: ${ENGINE_CONFIG.DEFAULT_MUSIC_VOLUME})`);
       } catch (e) {
         console.warn("Audio error:", e);
       }
@@ -169,7 +174,6 @@ export default function App() {
     }
   };
 
-  // Update phase detuning live when frequency shifts
   useEffect(() => {
     if (audioActive && audioCtxRef.current && oscRef.current && detuneOscRef.current) {
       const ctx = audioCtxRef.current;
@@ -187,7 +191,7 @@ export default function App() {
       const chimeGain = ctx.createGain();
       chimeOsc.type = 'sine';
       chimeOsc.frequency.setValueAtTime(freq, ctx.currentTime);
-      chimeGain.gain.setValueAtTime(0.04, ctx.currentTime);
+      chimeGain.gain.setValueAtTime(ENGINE_CONFIG.DEFAULT_MUSIC_VOLUME, ctx.currentTime);
       chimeGain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.3);
 
       chimeOsc.connect(chimeGain);
@@ -195,7 +199,7 @@ export default function App() {
       chimeOsc.start();
       chimeOsc.stop(ctx.currentTime + 0.3);
     } catch (e) {
-      // ignore audio glitch
+      // ignore
     }
   };
 
@@ -215,20 +219,23 @@ export default function App() {
   const resetGame = () => {
     setGameState('PLAYING');
     setConsecutivePipelines(0);
+    setCurrentRound(1);
     setTxStability(0.9984);
     setEntropy(12.4);
     setHarmonicFreq(432);
+    setCooldownTime(0);
     setTargetSpectrum(SPECTRAL_BANDS.map(() => Math.floor(30 + Math.random() * 50)));
     setPlayerSpectrum([50, 50, 50, 50, 50, 50, 50]);
-    pushLog('SYS', 'SOVEREIGN PROTOCOL SYSTEM RESET. THREE-TIER VISUAL FEEDBACK READY.');
-    showToast('🔄 Game Reset');
+    pushLog('SYS', 'SOVEREIGN PROTOCOL TOURNAMENT RESET. ROUND 1/3 READY.');
+    showToast('🔄 Tournament Reset');
   };
 
   // ROUTE 9SM PIPELINE CALIBRATION ACTION
   const handleRoutePipeline = async () => {
-    if (isProcessing || gameState !== 'PLAYING') return;
+    if (isProcessing || cooldownTime > 0 || gameState !== 'PLAYING') return;
 
     setIsProcessing(true);
+    setCooldownTime(ENGINE_CONFIG.DIRECTIVE_COOLDOWN_MS); // Apply 2500ms cooldown
     pushLog('INP', 'INGESTING SPECTRAL WAVELENGTH & SOLFEGGIO PHASE VECTORS...');
 
     // Calculate Spectrum Alignment Error
@@ -239,6 +246,9 @@ export default function App() {
     const freqError = Math.abs(harmonicFreq - ENGINE_CONFIG.F0_TARGET);
     const accuracyRatio = Math.max(0, 1 - (totalError / 350) - (freqError / 200));
 
+    // Check for Phase Lock Stability Surge Bonus (+0.0065 T(x))
+    const isPhaseLocked = totalError <= 20 && freqError === 0;
+
     // Pipeline Simulation Loop
     for (let i = 1; i <= 9; i++) {
       setSmProgress(i);
@@ -247,7 +257,7 @@ export default function App() {
         playStageChime(432);
       }
       if (i === 6) {
-        pushLog('SPEC', `STAGE 6: SPECTRAL REFRACTION RATIO = ${(accuracyRatio * 100).toFixed(1)}%`);
+        pushLog('SPEC', `STAGE 6: SPECTRAL REFRACTION ACCURACY = ${(accuracyRatio * 100).toFixed(1)}%`);
         playStageChime(528);
       }
       if (i === 9) {
@@ -260,31 +270,43 @@ export default function App() {
     // Calculate New T(x) Stability
     let newTx;
     if (accuracyRatio >= 0.82) {
-      // Good Calibration (Electric Violet)
-      newTx = Math.min(0.9998, txStability + 0.0015 + (accuracyRatio * 0.002));
+      // Good Calibration
+      let surge = isPhaseLocked ? ENGINE_CONFIG.PHASE_LOCK_SURGE_BONUS : 0;
+      newTx = Math.min(0.9998, txStability + 0.0015 + (accuracyRatio * 0.002) + surge);
       const newStreak = consecutivePipelines + 1;
       setConsecutivePipelines(newStreak);
-      setEntropy(Math.max(2.0, entropy - 3.5));
-      pushLog('RES', `PIPELINE #${newStreak} CALIBRATED! T(x) = ${newTx.toFixed(4)} [OPTIMAL ELECTRIC VIOLET]`);
+      setEntropy(Math.max(2.0, entropy - 4.5));
+
+      const logMsg = isPhaseLocked
+        ? `PHASE LOCK SURGE BONUS (+${ENGINE_CONFIG.PHASE_LOCK_SURGE_BONUS})! PIPELINE #${newStreak} CALIBRATED [T(x) = ${newTx.toFixed(4)}]`
+        : `PIPELINE #${newStreak} CALIBRATED! T(x) = ${newTx.toFixed(4)} [ACCURACY: ${(accuracyRatio * 100).toFixed(1)}%]`;
+      pushLog('RES', logMsg);
 
       if (newStreak >= ENGINE_CONFIG.TARGET_PIPELINES && newTx >= ENGINE_CONFIG.TX_WIN_THRESHOLD) {
-        setGameState('WON');
-        pushLog('VICTORY', '🏆 WIN CONDITION ACHIEVED: 10 CONSECUTIVE PIPELINES CALIBRATED ABOVE T(x) ≥ 0.9950!');
-        showToast('🏆 VICTORY: Sovereign Protocol Calibrated!');
+        if (currentRound >= ENGINE_CONFIG.TOURNAMENT_ROUNDS) {
+          setGameState('TOURNAMENT_WIN');
+          pushLog('CHAMPION', '🏆 TOURNAMENT GRAND CHAMPION: ALL 3 TOURNAMENT ROUNDS COMPLETED AT T(x) ≥ 0.9950!');
+          showToast('🏆 TOURNAMENT GRAND CHAMPION!');
+        } else {
+          setCurrentRound(r => r + 1);
+          setConsecutivePipelines(0);
+          pushLog('ROUND', `ROUND ${currentRound} COMPLETED! ADVANCING TO TOURNAMENT ROUND ${currentRound + 1}/${ENGINE_CONFIG.TOURNAMENT_ROUNDS}.`);
+          showToast(`🏆 Round ${currentRound} Complete! Advancing to Round ${currentRound + 1}`);
+        }
       } else {
-        showToast(`✨ Pipeline #${newStreak} Successfully Calibrated!`);
+        showToast(isPhaseLocked ? '⚡ PHASE LOCK SURGE BONUS (+0.0065 T(x))!' : `✨ Pipeline #${newStreak} Calibrated!`);
       }
     } else {
-      // Failed Calibration (Flickering Amber)
+      // Failed Calibration
       newTx = txStability - 0.035 - ((1 - accuracyRatio) * 0.04);
       setConsecutivePipelines(0); // Reset streak
       const newEntropy = Math.min(100, entropy + 18.0);
       setEntropy(newEntropy);
-      pushLog('FAIL', `CALIBRATION DRIFT! T(x) DROPPED TO ${newTx.toFixed(4)} [FLICKERING AMBER WARN]`);
+      pushLog('FAIL', `CALIBRATION DRIFT! T(x) DROPPED TO ${newTx.toFixed(4)}`);
 
       if (newTx < ENGINE_CONFIG.TX_LOSE_THRESHOLD) {
         setGameState('LOST');
-        pushLog('COLLAPSE', '💀 LOSE CONDITION TRIGGERED: T(x) COLLAPSED BELOW 0.8500! SYSTEMIC ENTROPY FAILURE.');
+        pushLog('COLLAPSE', `💀 SYSTEMIC ENTROPY COLLAPSE: T(x) DROPPED BELOW ${ENGINE_CONFIG.TX_LOSE_THRESHOLD}!`);
         showToast('💀 SYSTEM ENTROPY COLLAPSE!');
       } else {
         showToast('⚠️ Calibration Drift! Adjust Spectrum Sliders!');
@@ -292,7 +314,6 @@ export default function App() {
     }
 
     setTxStability(newTx);
-    // Generate new target spectrum for next wave
     setTargetSpectrum(SPECTRAL_BANDS.map(() => Math.floor(20 + Math.random() * 60)));
     setIsProcessing(false);
     setSmProgress(0);
@@ -301,12 +322,17 @@ export default function App() {
   // COMMAND HANDLER
   const handleCommand = (e) => {
     if (e.key === 'Enter' && input.trim()) {
+      if (cooldownTime > 0) {
+        showToast(`⏳ Cooldown active (${(cooldownTime / 1000).toFixed(1)}s remaining)`);
+        return;
+      }
+
       const cmdRaw = input.trim();
       const cmd = cmdRaw.toLowerCase();
       setInput('');
 
       if (cmd === 'help') {
-        pushLog('CMD', 'DIRECTIVES: route | sys-audit | freq-sync | deconstruct | reset | joy | token');
+        pushLog('CMD', 'DIRECTIVES: route | sys-audit | freq-sync | deconstruct | reset | token');
         return;
       }
       if (cmd === 'route') {
@@ -318,7 +344,7 @@ export default function App() {
         return;
       }
       if (cmd === 'sys-audit') {
-        pushLog('AUDIT', `T(x) STABILITY: ${txStability.toFixed(4)} | STREAK: ${consecutivePipelines}/10 | ENTROPY: ${entropy.toFixed(1)}%`);
+        pushLog('AUDIT', `T(x): ${txStability.toFixed(4)} | ROUND: ${currentRound}/3 | STREAK: ${consecutivePipelines}/10 | ENTROPY: ${entropy.toFixed(1)}%`);
         return;
       }
       if (cmd === 'freq-sync') {
@@ -328,10 +354,6 @@ export default function App() {
       }
       if (cmd === 'deconstruct') {
         pushLog('SPEC', '7-WAVELENGTH DECONSTRUCTION: ACTIVE SPECTRAL ERROR MAPPED.');
-        return;
-      }
-      if (cmd === 'token') {
-        setIsApiKeyModalOpen(true);
         return;
       }
 
@@ -345,7 +367,7 @@ export default function App() {
   }, [logs]);
 
   // Determine current Tier Color Theme
-  const currentTier = txStability >= 0.9950 ? 'VIOLET' : txStability >= 0.9000 ? 'AMBER' : 'WHITE';
+  const currentTier = txStability >= ENGINE_CONFIG.TX_WIN_THRESHOLD ? 'VIOLET' : txStability >= 0.9000 ? 'AMBER' : 'WHITE';
 
   return (
     <div className={`min-h-screen bg-[#020402] font-mono p-3 md:p-6 flex flex-col relative overflow-hidden select-none transition-colors duration-500 ${
@@ -384,23 +406,32 @@ export default function App() {
               currentTier === 'AMBER' ? 'bg-[#f59e0b]/20 border border-[#f59e0b] text-[#f59e0b] animate-pulse shadow-[0_0_10px_#f59e0b]' :
               'bg-white/20 border border-white text-white'
             }`}>
-              {currentTier === 'VIOLET' ? '⚡ Electric Violet State' : currentTier === 'AMBER' ? '⚠️ Flickering Amber State' : '⚪ Static White State'}
+              Tournament Round {currentRound}/{ENGINE_CONFIG.TOURNAMENT_ROUNDS}
             </span>
           </div>
           <p className="text-[11px] opacity-80 mt-1">
-            3-Tier Visual Feedback & Real-Time Solfeggio Phase Detuning // Node {ENGINE_CONFIG.NODE}
+            Editor Settings: Streak Target: {ENGINE_CONFIG.TARGET_PIPELINES} | Win: ≥ {ENGINE_CONFIG.TX_WIN_THRESHOLD} | Lose: &lt; {ENGINE_CONFIG.TX_LOSE_THRESHOLD} | Cooldown: {ENGINE_CONFIG.DIRECTIVE_COOLDOWN_MS}ms
           </p>
         </div>
 
-        {/* WIN / STREAK & GAME OBJECTIVES OVERLAY */}
+        {/* STREAK & GAME OBJECTIVES OVERLAY */}
         <div className="flex items-center gap-3 text-right text-xs">
 
           {/* STREAK METER */}
           <div className="bg-black/80 border border-[#00FF41] p-2.5 rounded shadow-[0_0_15px_rgba(0,255,65,0.2)] flex items-center gap-3">
             <Trophy className="w-5 h-5 text-[#00FF41] animate-pulse" />
             <div className="text-left">
-              <div className="text-[10px] text-[#00FF41] font-bold uppercase tracking-wider">CALIBRATION STREAK</div>
+              <div className="text-[10px] text-[#00FF41] font-bold uppercase tracking-wider">PIPELINE STREAK</div>
               <div className="text-base font-black text-white">{consecutivePipelines} / {ENGINE_CONFIG.TARGET_PIPELINES} <span className="text-[10px] font-normal text-slate-400">Pipelines</span></div>
+            </div>
+          </div>
+
+          {/* COOLDOWN INDICATOR */}
+          <div className="bg-black/80 border border-[#a855f7] p-2.5 rounded flex items-center gap-2">
+            <Clock className={`w-4 h-4 ${cooldownTime > 0 ? 'text-[#f59e0b] animate-spin' : 'text-[#00FF41]'}`} />
+            <div className="text-left">
+              <div className="text-[9px] text-slate-400 uppercase">COOLDOWN</div>
+              <div className="text-xs font-bold text-white">{cooldownTime > 0 ? `${(cooldownTime / 1000).toFixed(1)}s` : 'READY'}</div>
             </div>
           </div>
 
@@ -414,7 +445,7 @@ export default function App() {
             }`}
           >
             {audioActive ? <Volume2 className="w-4 h-4 animate-pulse" /> : <VolumeX className="w-4 h-4" />}
-            <span className="text-[10px] hidden sm:inline">{audioActive ? 'DETUNE AUDIO ON' : 'AUDIO MUTED'}</span>
+            <span className="text-[10px] hidden sm:inline">{audioActive ? `VOL ${ENGINE_CONFIG.DEFAULT_MUSIC_VOLUME}` : 'MUTED'}</span>
           </button>
 
           {/* RESET BUTTON */}
@@ -428,22 +459,22 @@ export default function App() {
         </div>
       </header>
 
-      {/* GAME OVER MODAL (WIN) */}
-      {gameState === 'WON' && (
+      {/* GAME OVER MODAL (TOURNAMENT WIN) */}
+      {(gameState === 'WON' || gameState === 'TOURNAMENT_WIN') && (
         <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-4">
           <div className="bg-[#0a0212] border-2 border-[#a855f7] rounded-2xl max-w-lg w-full p-6 text-center space-y-5 shadow-[0_0_50px_#a855f7]">
             <Trophy className="w-16 h-16 text-[#a855f7] mx-auto animate-bounce" />
             <h2 className="text-2xl font-black text-white uppercase tracking-wider">
-              🏆 VICTORY: SOVEREIGN ARCHITECT
+              🏆 TOURNAMENT GRAND CHAMPION
             </h2>
             <p className="text-xs text-[#a855f7] leading-relaxed">
-              You have successfully calibrated 10 consecutive 9SM data pipelines while sustaining thermodynamic truth stability T(x) ≥ 0.9950! Operational node equilibrium achieved.
+              You have completed all {ENGINE_CONFIG.TOURNAMENT_ROUNDS} Tournament Rounds with 10 consecutive 9SM data pipelines calibrated above T(x) ≥ {ENGINE_CONFIG.TX_WIN_THRESHOLD}!
             </p>
             <button
               onClick={resetGame}
               className="px-6 py-3 bg-[#a855f7] text-white font-extrabold rounded-xl text-xs uppercase tracking-widest shadow-[0_0_20px_#a855f7] hover:scale-105 transition-transform"
             >
-              Play Again / Recalibrate Node
+              Play Tournament Again
             </button>
           </div>
         </div>
@@ -455,10 +486,10 @@ export default function App() {
           <div className="bg-[#0f0205] border-2 border-[#f59e0b] rounded-2xl max-w-lg w-full p-6 text-center space-y-5 shadow-[0_0_50px_#f59e0b]">
             <AlertTriangle className="w-16 h-16 text-[#f59e0b] mx-auto animate-pulse" />
             <h2 className="text-2xl font-black text-white uppercase tracking-wider">
-              💀 SYSTEMIC ENTROPY COLLAPSE
+              💀 CRITICAL ENTROPY COLLAPSE
             </h2>
             <p className="text-xs text-[#f59e0b] leading-relaxed">
-              Thermodynamic truth stability T(x) collapsed below 0.8500! Systemic spectral drift caused irreversible node desynchronization.
+              Thermodynamic truth stability T(x) collapsed below threshold {ENGINE_CONFIG.TX_LOSE_THRESHOLD}! Systemic spectral drift caused node desynchronization.
             </p>
             <button
               onClick={resetGame}
@@ -523,7 +554,7 @@ export default function App() {
             {/* SOLFEGGIO HARMONIC DIAL WITH REALTIME PHASE DETUNING */}
             <div className="mt-4 pt-3 border-t border-[#a855f7]/30 space-y-2">
               <div className="flex justify-between text-[10px] font-bold text-white">
-                <span className="flex items-center gap-1"><Activity className="w-3 h-3 text-[#a855f7]" /> PHASE DETUNE TUNER:</span>
+                <span className="flex items-center gap-1"><Activity className="w-3 h-3 text-[#a855f7]" /> PHASE LOCK DIAL:</span>
                 <span className={harmonicFreq === 432 ? 'text-[#00FF41]' : 'text-[#f59e0b]'}>
                   {harmonicFreq} Hz (Target: 432 Hz)
                 </span>
@@ -542,11 +573,13 @@ export default function App() {
           {/* ACTION BUTTON: ROUTE 9SM PIPELINE */}
           <button
             onClick={handleRoutePipeline}
-            disabled={isProcessing || gameState !== 'PLAYING'}
+            disabled={isProcessing || cooldownTime > 0 || gameState !== 'PLAYING'}
             className="w-full py-4 bg-gradient-to-r from-[#a855f7] via-[#00FF41] to-[#f59e0b] text-black font-black text-sm uppercase tracking-widest rounded-xl shadow-[0_0_25px_#a855f7] hover:brightness-125 transition-all transform active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2 mt-2"
           >
             {isProcessing ? <RefreshCw className="w-5 h-5 animate-spin" /> : <Play className="w-5 h-5 fill-black" />}
-            <span>{isProcessing ? 'CALIBRATING 9SM PIPELINE...' : 'ROUTE 9SM PIPELINE'}</span>
+            <span>
+              {cooldownTime > 0 ? `COOLDOWN (${(cooldownTime / 1000).toFixed(1)}s)` : isProcessing ? 'CALIBRATING 9SM PIPELINE...' : 'ROUTE 9SM PIPELINE'}
+            </span>
           </button>
         </div>
 
@@ -559,18 +592,18 @@ export default function App() {
               <span className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-2">
                 <ShieldCheck className="w-4 h-4 text-[#00FF41]" /> Thermodynamic Truth T(x)
               </span>
-              <span className="text-[10px] text-[#00FF41] font-bold">Win: ≥ 0.9950 | Lose: &lt; 0.8500</span>
+              <span className="text-[10px] text-[#00FF41] font-bold">Win: ≥ {ENGINE_CONFIG.TX_WIN_THRESHOLD} | Lose: &lt; {ENGINE_CONFIG.TX_LOSE_THRESHOLD}</span>
             </div>
 
             <div className="text-center py-2">
               <div className={`text-4xl font-black tracking-widest ${
-                txStability >= 0.9950 ? 'text-[#a855f7] drop-shadow-[0_0_12px_#a855f7]' :
+                txStability >= ENGINE_CONFIG.TX_WIN_THRESHOLD ? 'text-[#a855f7] drop-shadow-[0_0_12px_#a855f7]' :
                 txStability >= 0.9000 ? 'text-[#f59e0b] animate-pulse' : 'text-white'
               }`}>
                 {txStability.toFixed(4)}
               </div>
               <div className="text-[10px] text-slate-400 uppercase tracking-widest mt-1">
-                3-TIER VERIDICAL STABILITY STATE: <span className="text-white font-bold">{currentTier}</span>
+                VERIDICAL STATE: <span className="text-white font-bold">{currentTier}</span>
               </div>
             </div>
 
@@ -578,16 +611,16 @@ export default function App() {
             <div className="w-full bg-slate-900 border border-slate-800 h-3 rounded-full overflow-hidden p-0.5">
               <div
                 className={`h-full rounded-full transition-all duration-500 ${
-                  txStability >= 0.9950 ? 'bg-[#a855f7] shadow-[0_0_10px_#a855f7]' :
+                  txStability >= ENGINE_CONFIG.TX_WIN_THRESHOLD ? 'bg-[#a855f7] shadow-[0_0_10px_#a855f7]' :
                   txStability >= 0.9000 ? 'bg-[#f59e0b]' : 'bg-white'
                 }`}
-                style={{ width: `${Math.min(100, Math.max(0, ((txStability - 0.800) / (1.000 - 0.800)) * 100))}%` }}
+                style={{ width: `${Math.min(100, Math.max(0, ((txStability - ENGINE_CONFIG.TX_LOSE_THRESHOLD) / (1.000 - ENGINE_CONFIG.TX_LOSE_THRESHOLD)) * 100))}%` }}
               ></div>
             </div>
 
-            {/* ENTROPY METER */}
+            {/* ENTROPY & BASE DECAY RATE METER */}
             <div className="pt-2 border-t border-slate-800 flex justify-between items-center text-xs">
-              <span className="text-slate-400">Systemic Entropy:</span>
+              <span className="text-slate-400">Entropy (Decay {ENGINE_CONFIG.BASE_ENTROPY_DECAY_RATE}%/s):</span>
               <span className={`font-bold ${entropy >= 50 ? 'text-[#f59e0b]' : 'text-[#a855f7]'}`}>
                 {entropy.toFixed(1)}%
               </span>
@@ -598,7 +631,7 @@ export default function App() {
           <div className="flex-grow border-2 border-[#a855f7] rounded-2xl bg-black/95 flex flex-col overflow-hidden h-[320px]">
             <div className="bg-[#a855f7] text-white px-3 py-1.5 flex justify-between items-center text-[10px] font-black uppercase tracking-wider">
               <span>TERMINAL LOG STREAM</span>
-              <span>STABILITY: {txStability >= 0.9950 ? 'OPTIMAL' : 'DEGRADED'}</span>
+              <span>STABILITY: {txStability >= ENGINE_CONFIG.TX_WIN_THRESHOLD ? 'OPTIMAL' : 'DEGRADED'}</span>
             </div>
 
             <div className="flex-grow p-3 overflow-y-auto space-y-1.5 text-[11px] custom-scrollbar font-mono">
@@ -606,7 +639,7 @@ export default function App() {
                 <div key={i} className="flex gap-2 opacity-90">
                   <span className="opacity-40 text-[10px]">[{log.ts}]</span>
                   <span className={`font-bold w-12 ${
-                    log.type === 'VICTORY' || log.type === 'RES' ? 'text-[#a855f7]' :
+                    log.type === 'CHAMPION' || log.type === 'ROUND' || log.type === 'RES' ? 'text-[#a855f7]' :
                     log.type === 'FAIL' || log.type === 'COLLAPSE' ? 'text-[#f59e0b]' : 'text-slate-200'
                   }`}>{log.type}</span>
                   <span className="flex-grow text-slate-200 break-all">{log.msg}</span>
@@ -625,8 +658,9 @@ export default function App() {
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={handleCommand}
+                  disabled={cooldownTime > 0}
                   className="bg-transparent border-none outline-none flex-grow text-[#a855f7] text-xs font-mono placeholder-[#a855f7]/30"
-                  placeholder='Type "route", "help", "sys-audit", "freq-sync", "reset"...'
+                  placeholder={cooldownTime > 0 ? `COOLDOWN ACTIVE (${(cooldownTime / 1000).toFixed(1)}s)...` : 'Type "route", "help", "sys-audit", "reset"...'}
                 />
               </div>
             </div>
@@ -634,53 +668,48 @@ export default function App() {
 
         </div>
 
-        {/* RIGHT RAIL: 9SM PIPELINE STAGES & THREE-TIER VISUAL FEEDBACK */}
+        {/* RIGHT RAIL: GAME EDITOR PROPERTIES & RULES */}
         <div className="lg:col-span-3 p-4 rounded-2xl border-2 border-[#f59e0b] bg-black/80 space-y-4 shadow-[0_0_20px_rgba(245,158,11,0.15)] flex flex-col justify-between">
           <div className="space-y-4">
             <div className="border-b border-[#f59e0b]/30 pb-2">
               <h2 className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-2">
-                <Zap className="w-4 h-4 text-[#f59e0b]" /> 9SM Pipeline Stages
+                <Settings className="w-4 h-4 text-[#f59e0b]" /> Game Editor Properties
               </h2>
             </div>
 
-            {/* 9SM STAGES visualizer */}
-            <div className="grid grid-cols-3 gap-2">
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((s) => {
-                const isActive = smProgress >= s;
-                const isCurrent = smProgress === s;
-                return (
-                  <div
-                    key={s}
-                    className={`h-8 rounded-lg flex items-center justify-center text-[10px] font-black border transition-all ${
-                      isCurrent
-                        ? 'bg-[#a855f7] text-white border-white animate-pulse shadow-[0_0_12px_#a855f7]'
-                        : isActive
-                        ? 'bg-[#a855f7]/30 text-[#a855f7] border-[#a855f7]'
-                        : 'border-slate-800 text-slate-600'
-                    }`}
-                  >
-                    S{s}
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* THREE-TIER VISUAL FEEDBACK LEGEND */}
+            {/* PROPERTIES LEGEND */}
             <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-2 text-[10px] text-slate-300">
-              <span className="font-bold text-[#a855f7] uppercase block border-b border-slate-800 pb-1">
-                🎨 Three-Tier Feedback Tiers
-              </span>
-              <div className="flex items-center gap-2">
-                <span className="w-3 h-3 rounded bg-[#a855f7]"></span>
-                <span className="text-[#a855f7] font-bold">Electric Violet:</span> Optimal (T(x) ≥ 0.9950)
+              <div className="flex justify-between border-b border-slate-800 pb-1">
+                <span className="text-slate-400">Target Pipeline Streak:</span>
+                <span className="text-[#00FF41] font-bold">{ENGINE_CONFIG.TARGET_PIPELINES}</span>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="w-3 h-3 rounded bg-[#f59e0b]"></span>
-                <span className="text-[#f59e0b] font-bold">Flickering Amber:</span> Warning Drift
+              <div className="flex justify-between border-b border-slate-800 pb-1">
+                <span className="text-slate-400">Optimal T(x) Threshold:</span>
+                <span className="text-[#a855f7] font-bold">{ENGINE_CONFIG.TX_WIN_THRESHOLD}</span>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="w-3 h-3 rounded bg-white"></span>
-                <span className="text-white font-bold">Static White:</span> Neutral/Noise State
+              <div className="flex justify-between border-b border-slate-800 pb-1">
+                <span className="text-slate-400">Collapse T(x) Threshold:</span>
+                <span className="text-[#f59e0b] font-bold">{ENGINE_CONFIG.TX_LOSE_THRESHOLD}</span>
+              </div>
+              <div className="flex justify-between border-b border-slate-800 pb-1">
+                <span className="text-slate-400">Base Entropy Decay Rate:</span>
+                <span className="text-white font-bold">{ENGINE_CONFIG.BASE_ENTROPY_DECAY_RATE}/s</span>
+              </div>
+              <div className="flex justify-between border-b border-slate-800 pb-1">
+                <span className="text-slate-400">Phase Lock Surge Bonus:</span>
+                <span className="text-[#00FF41] font-bold">+{ENGINE_CONFIG.PHASE_LOCK_SURGE_BONUS} T(x)</span>
+              </div>
+              <div className="flex justify-between border-b border-slate-800 pb-1">
+                <span className="text-slate-400">Directive Cooldown:</span>
+                <span className="text-white font-bold">{ENGINE_CONFIG.DIRECTIVE_COOLDOWN_MS} ms</span>
+              </div>
+              <div className="flex justify-between border-b border-slate-800 pb-1">
+                <span className="text-slate-400">Default Music Volume:</span>
+                <span className="text-white font-bold">{ENGINE_CONFIG.DEFAULT_MUSIC_VOLUME}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-400">Tournament Rounds:</span>
+                <span className="text-[#a855f7] font-bold">{ENGINE_CONFIG.TOURNAMENT_ROUNDS}</span>
               </div>
             </div>
           </div>
