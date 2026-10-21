@@ -105,14 +105,15 @@ export default function App() {
 
   // System Logs
   const [logs, setLogs] = useState([
-    { ts: "00:00:00", type: "SYS", msg: "SOVEREIGN PROTOCOL :: PUZZLE SYSTEM INITIALIZED.", tx: 1.0000 },
+    { ts: "00:00:00", type: "SYS", msg: "SOVEREIGN PROTOCOL :: 3-TIER SPECTRAL SYSTEM INITIALIZED.", tx: 1.0000 },
     { ts: "00:00:01", type: "GOAL", msg: "CALIBRATE 10 CONSECUTIVE 9SM PIPELINES ABOVE T(x) ≥ 0.9950 TO WIN.", tx: 0.9998 },
-    { ts: "00:00:02", type: "WARN", msg: "WARNING: IF T(x) DROPS BELOW 0.8500, ENTROPY COLLAPSE OCCURS.", tx: 0.9950 }
+    { ts: "00:00:02", type: "WARN", msg: "WARNING: T(x) < 0.8500 CAUSES SYSTEMIC ENTROPY COLLAPSE.", tx: 0.9950 }
   ]);
 
   const logEndRef = useRef(null);
   const audioCtxRef = useRef(null);
   const oscRef = useRef(null);
+  const detuneOscRef = useRef(null);
 
   // Toast Notification
   const [toastMsg, setToastMsg] = useState('');
@@ -121,7 +122,7 @@ export default function App() {
     setTimeout(() => setToastMsg(''), 3000);
   };
 
-  // Audio Synthesizer
+  // REAL-TIME SOLFEGGIO PHASE DETUNING AUDIO FEEDBACK
   const toggleAudioResonator = () => {
     if (!audioActive) {
       try {
@@ -129,30 +130,54 @@ export default function App() {
         const ctx = new AudioCtx();
         audioCtxRef.current = ctx;
 
+        // Primary Carrier Oscillator (432Hz)
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
-
         osc.type = 'sine';
         osc.frequency.setValueAtTime(harmonicFreq, ctx.currentTime);
         gain.gain.setValueAtTime(0.015, ctx.currentTime);
 
+        // Secondary Phase Detune Beat Oscillator
+        const detuneOsc = ctx.createOscillator();
+        const detuneGain = ctx.createGain();
+        detuneOsc.type = 'sine';
+        const phaseOffset = Math.abs(harmonicFreq - ENGINE_CONFIG.F0_TARGET);
+        detuneOsc.frequency.setValueAtTime(ENGINE_CONFIG.F0_TARGET + phaseOffset, ctx.currentTime);
+        detuneGain.gain.setValueAtTime(phaseOffset > 2 ? 0.012 : 0.002, ctx.currentTime);
+
         osc.connect(gain);
         gain.connect(ctx.destination);
+        detuneOsc.connect(detuneGain);
+        detuneGain.connect(ctx.destination);
+
         osc.start();
+        detuneOsc.start();
 
         oscRef.current = osc;
+        detuneOscRef.current = detuneOsc;
         setAudioActive(true);
-        showToast(`🔊 432Hz Solfeggio Audio Active`);
+        showToast(`🔊 432Hz Solfeggio Audio Resonator Active`);
       } catch (e) {
         console.warn("Audio error:", e);
       }
     } else {
       if (oscRef.current) oscRef.current.stop();
+      if (detuneOscRef.current) detuneOscRef.current.stop();
       if (audioCtxRef.current) audioCtxRef.current.close();
       setAudioActive(false);
       showToast("🔇 Audio Muted");
     }
   };
+
+  // Update phase detuning live when frequency shifts
+  useEffect(() => {
+    if (audioActive && audioCtxRef.current && oscRef.current && detuneOscRef.current) {
+      const ctx = audioCtxRef.current;
+      oscRef.current.frequency.setValueAtTime(harmonicFreq, ctx.currentTime);
+      const phaseOffset = Math.abs(harmonicFreq - ENGINE_CONFIG.F0_TARGET);
+      detuneOscRef.current.frequency.setValueAtTime(ENGINE_CONFIG.F0_TARGET + phaseOffset, ctx.currentTime);
+    }
+  }, [harmonicFreq, audioActive]);
 
   const playStageChime = (freq = 528) => {
     if (!audioActive || !audioCtxRef.current) return;
@@ -195,7 +220,7 @@ export default function App() {
     setHarmonicFreq(432);
     setTargetSpectrum(SPECTRAL_BANDS.map(() => Math.floor(30 + Math.random() * 50)));
     setPlayerSpectrum([50, 50, 50, 50, 50, 50, 50]);
-    pushLog('SYS', 'SOVEREIGN PROTOCOL SYSTEM RESET. AWAITING PIPELINE CALIBRATION.');
+    pushLog('SYS', 'SOVEREIGN PROTOCOL SYSTEM RESET. THREE-TIER VISUAL FEEDBACK READY.');
     showToast('🔄 Game Reset');
   };
 
@@ -204,7 +229,7 @@ export default function App() {
     if (isProcessing || gameState !== 'PLAYING') return;
 
     setIsProcessing(true);
-    pushLog('INP', 'INGESTING SPECTRAL WAVELENGTH & HARMONIC VECTORS...');
+    pushLog('INP', 'INGESTING SPECTRAL WAVELENGTH & SOLFEGGIO PHASE VECTORS...');
 
     // Calculate Spectrum Alignment Error
     let totalError = 0;
@@ -218,11 +243,11 @@ export default function App() {
     for (let i = 1; i <= 9; i++) {
       setSmProgress(i);
       if (i === 3) {
-        pushLog('HEU', 'STAGE 3: HEURISTIC INTERFERENCE MATCHING...');
+        pushLog('HEU', 'STAGE 3: HEURISTIC INTERFERENCE MAPPED.');
         playStageChime(432);
       }
       if (i === 6) {
-        pushLog('SPEC', `STAGE 6: SPECTRAL ACCURACY RATIO = ${(accuracyRatio * 100).toFixed(1)}%`);
+        pushLog('SPEC', `STAGE 6: SPECTRAL REFRACTION RATIO = ${(accuracyRatio * 100).toFixed(1)}%`);
         playStageChime(528);
       }
       if (i === 9) {
@@ -235,12 +260,12 @@ export default function App() {
     // Calculate New T(x) Stability
     let newTx;
     if (accuracyRatio >= 0.82) {
-      // Good Calibration
+      // Good Calibration (Electric Violet)
       newTx = Math.min(0.9998, txStability + 0.0015 + (accuracyRatio * 0.002));
       const newStreak = consecutivePipelines + 1;
       setConsecutivePipelines(newStreak);
       setEntropy(Math.max(2.0, entropy - 3.5));
-      pushLog('RES', `PIPELINE #${newStreak} CALIBRATED! T(x) = ${newTx.toFixed(4)} [ACCURACY: ${(accuracyRatio * 100).toFixed(1)}%]`);
+      pushLog('RES', `PIPELINE #${newStreak} CALIBRATED! T(x) = ${newTx.toFixed(4)} [OPTIMAL ELECTRIC VIOLET]`);
 
       if (newStreak >= ENGINE_CONFIG.TARGET_PIPELINES && newTx >= ENGINE_CONFIG.TX_WIN_THRESHOLD) {
         setGameState('WON');
@@ -250,12 +275,12 @@ export default function App() {
         showToast(`✨ Pipeline #${newStreak} Successfully Calibrated!`);
       }
     } else {
-      // Failed Calibration
+      // Failed Calibration (Flickering Amber)
       newTx = txStability - 0.035 - ((1 - accuracyRatio) * 0.04);
       setConsecutivePipelines(0); // Reset streak
       const newEntropy = Math.min(100, entropy + 18.0);
       setEntropy(newEntropy);
-      pushLog('FAIL', `PIPELINE CALIBRATION DRIFT DETECTED! T(x) DROPPED TO ${newTx.toFixed(4)}`);
+      pushLog('FAIL', `CALIBRATION DRIFT! T(x) DROPPED TO ${newTx.toFixed(4)} [FLICKERING AMBER WARN]`);
 
       if (newTx < ENGINE_CONFIG.TX_LOSE_THRESHOLD) {
         setGameState('LOST');
@@ -319,34 +344,51 @@ export default function App() {
     logEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [logs]);
 
-  return (
-    <div className="min-h-screen bg-[#020402] text-[#00F0FF] font-mono p-3 md:p-6 flex flex-col relative overflow-hidden select-none">
+  // Determine current Tier Color Theme
+  const currentTier = txStability >= 0.9950 ? 'VIOLET' : txStability >= 0.9000 ? 'AMBER' : 'WHITE';
 
-      {/* CYBERPUNK NEON GLOW GRID & SCANLINES */}
-      <div className="fixed inset-0 pointer-events-none z-50 opacity-15 bg-[linear-gradient(rgba(0,240,255,0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(0,240,255,0.1)_1px,transparent_1px)] bg-[size:24px_24px]"></div>
+  return (
+    <div className={`min-h-screen bg-[#020402] font-mono p-3 md:p-6 flex flex-col relative overflow-hidden select-none transition-colors duration-500 ${
+      currentTier === 'VIOLET' ? 'text-[#a855f7]' :
+      currentTier === 'AMBER' ? 'text-[#f59e0b]' : 'text-slate-100'
+    }`}>
+
+      {/* CYBERPUNK NEON GLOW GRID & CRT SCANLINES */}
+      <div className={`fixed inset-0 pointer-events-none z-50 opacity-15 bg-[size:24px_24px] ${
+        currentTier === 'VIOLET' ? 'bg-[linear-gradient(rgba(168,85,247,0.15)_1px,transparent_1px),linear-gradient(90deg,rgba(168,85,247,0.15)_1px,transparent_1px)]' :
+        currentTier === 'AMBER' ? 'bg-[linear-gradient(rgba(245,158,11,0.15)_1px,transparent_1px),linear-gradient(90deg,rgba(245,158,11,0.15)_1px,transparent_1px)]' :
+        'bg-[linear-gradient(rgba(255,255,255,0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.1)_1px,transparent_1px)]'
+      }`}></div>
       <div className="fixed inset-0 pointer-events-none z-50 opacity-10 bg-[linear-gradient(rgba(255,0,127,0.2)_50%,rgba(0,0,0,0.5)_50%)] bg-[length:100%_4px]"></div>
 
       {/* TOAST NOTIFICATION */}
       {toastMsg && (
-        <div className="fixed top-4 right-4 z-50 bg-[#FF007F] text-white font-extrabold px-4 py-2.5 rounded shadow-[0_0_20px_#FF007F] text-xs animate-bounce border border-white">
+        <div className="fixed top-4 right-4 z-50 bg-[#a855f7] text-white font-extrabold px-4 py-2.5 rounded shadow-[0_0_20px_#a855f7] text-xs animate-bounce border border-white">
           {toastMsg}
         </div>
       )}
 
       {/* HEADER SECTION */}
-      <header className="flex flex-col md:flex-row justify-between items-start md:items-end border-b-2 border-[#00F0FF] pb-3 mb-4 gap-3">
+      <header className={`flex flex-col md:flex-row justify-between items-start md:items-end border-b-2 pb-3 mb-4 gap-3 ${
+        currentTier === 'VIOLET' ? 'border-[#a855f7]' :
+        currentTier === 'AMBER' ? 'border-[#f59e0b] animate-pulse' : 'border-white'
+      }`}>
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl md:text-3xl font-black italic tracking-tighter text-white flex items-center gap-2 drop-shadow-[0_0_12px_#00F0FF]">
-              <Disc className="w-7 h-7 text-[#00F0FF] animate-spin" style={{ animationDuration: '8s' }} />
-              SOVEREIGN <span className="text-[#FF007F]">PROTOCOL</span>
+            <h1 className="text-2xl md:text-3xl font-black italic tracking-tighter text-white flex items-center gap-2 drop-shadow-[0_0_12px_#a855f7]">
+              <Disc className="w-7 h-7 text-[#a855f7] animate-spin" style={{ animationDuration: '8s' }} />
+              SOVEREIGN <span className={currentTier === 'VIOLET' ? 'text-[#a855f7]' : currentTier === 'AMBER' ? 'text-[#f59e0b]' : 'text-white'}>PROTOCOL</span>
             </h1>
-            <span className="text-[10px] px-2.5 py-1 bg-[#FF007F]/20 border border-[#FF007F] rounded text-[#FF007F] font-bold uppercase tracking-wider shadow-[0_0_8px_#FF007F]">
-              Cyberpunk Neon Puzzle
+            <span className={`text-[10px] px-2.5 py-1 rounded font-bold uppercase tracking-wider ${
+              currentTier === 'VIOLET' ? 'bg-[#a855f7]/20 border border-[#a855f7] text-[#a855f7] shadow-[0_0_10px_#a855f7]' :
+              currentTier === 'AMBER' ? 'bg-[#f59e0b]/20 border border-[#f59e0b] text-[#f59e0b] animate-pulse shadow-[0_0_10px_#f59e0b]' :
+              'bg-white/20 border border-white text-white'
+            }`}>
+              {currentTier === 'VIOLET' ? '⚡ Electric Violet State' : currentTier === 'AMBER' ? '⚠️ Flickering Amber State' : '⚪ Static White State'}
             </span>
           </div>
-          <p className="text-[11px] text-[#00F0FF]/80 mt-1">
-            Synchronize 7-Wavelength Spectral Streams & 432Hz Solfeggio Resonator // Node {ENGINE_CONFIG.NODE}
+          <p className="text-[11px] opacity-80 mt-1">
+            3-Tier Visual Feedback & Real-Time Solfeggio Phase Detuning // Node {ENGINE_CONFIG.NODE}
           </p>
         </div>
 
@@ -367,18 +409,18 @@ export default function App() {
             onClick={toggleAudioResonator}
             className={`p-2.5 border rounded transition-all text-xs flex items-center gap-1.5 font-extrabold ${
               audioActive
-                ? 'bg-[#00F0FF] text-black border-[#00F0FF] shadow-[0_0_12px_#00F0FF]'
-                : 'border-[#00F0FF]/40 text-[#00F0FF] hover:bg-[#00F0FF]/20'
+                ? 'bg-[#a855f7] text-white border-[#a855f7] shadow-[0_0_12px_#a855f7]'
+                : 'border-[#a855f7]/40 text-[#a855f7] hover:bg-[#a855f7]/20'
             }`}
           >
             {audioActive ? <Volume2 className="w-4 h-4 animate-pulse" /> : <VolumeX className="w-4 h-4" />}
-            <span className="text-[10px] hidden sm:inline">{audioActive ? '432Hz ACTIVE' : 'AUDIO MUTED'}</span>
+            <span className="text-[10px] hidden sm:inline">{audioActive ? 'DETUNE AUDIO ON' : 'AUDIO MUTED'}</span>
           </button>
 
           {/* RESET BUTTON */}
           <button
             onClick={resetGame}
-            className="p-2.5 border border-[#FF007F]/60 hover:bg-[#FF007F]/20 text-[#FF007F] rounded transition-all"
+            className="p-2.5 border border-slate-700 hover:bg-slate-800 text-slate-300 rounded transition-all"
             title="Reset Game State"
           >
             <RotateCcw className="w-4 h-4" />
@@ -389,17 +431,17 @@ export default function App() {
       {/* GAME OVER MODAL (WIN) */}
       {gameState === 'WON' && (
         <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-4">
-          <div className="bg-[#02080a] border-2 border-[#00FF41] rounded-2xl max-w-lg w-full p-6 text-center space-y-5 shadow-[0_0_50px_#00FF41]">
-            <Trophy className="w-16 h-16 text-[#00FF41] mx-auto animate-bounce" />
+          <div className="bg-[#0a0212] border-2 border-[#a855f7] rounded-2xl max-w-lg w-full p-6 text-center space-y-5 shadow-[0_0_50px_#a855f7]">
+            <Trophy className="w-16 h-16 text-[#a855f7] mx-auto animate-bounce" />
             <h2 className="text-2xl font-black text-white uppercase tracking-wider">
               🏆 VICTORY: SOVEREIGN ARCHITECT
             </h2>
-            <p className="text-xs text-[#00FF41] leading-relaxed">
+            <p className="text-xs text-[#a855f7] leading-relaxed">
               You have successfully calibrated 10 consecutive 9SM data pipelines while sustaining thermodynamic truth stability T(x) ≥ 0.9950! Operational node equilibrium achieved.
             </p>
             <button
               onClick={resetGame}
-              className="px-6 py-3 bg-[#00FF41] text-black font-extrabold rounded-xl text-xs uppercase tracking-widest shadow-[0_0_20px_#00FF41] hover:scale-105 transition-transform"
+              className="px-6 py-3 bg-[#a855f7] text-white font-extrabold rounded-xl text-xs uppercase tracking-widest shadow-[0_0_20px_#a855f7] hover:scale-105 transition-transform"
             >
               Play Again / Recalibrate Node
             </button>
@@ -410,17 +452,17 @@ export default function App() {
       {/* GAME OVER MODAL (LOSE) */}
       {gameState === 'LOST' && (
         <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-4">
-          <div className="bg-[#0f0205] border-2 border-[#FF007F] rounded-2xl max-w-lg w-full p-6 text-center space-y-5 shadow-[0_0_50px_#FF007F]">
-            <AlertTriangle className="w-16 h-16 text-[#FF007F] mx-auto animate-pulse" />
+          <div className="bg-[#0f0205] border-2 border-[#f59e0b] rounded-2xl max-w-lg w-full p-6 text-center space-y-5 shadow-[0_0_50px_#f59e0b]">
+            <AlertTriangle className="w-16 h-16 text-[#f59e0b] mx-auto animate-pulse" />
             <h2 className="text-2xl font-black text-white uppercase tracking-wider">
               💀 SYSTEMIC ENTROPY COLLAPSE
             </h2>
-            <p className="text-xs text-[#FF007F] leading-relaxed">
+            <p className="text-xs text-[#f59e0b] leading-relaxed">
               Thermodynamic truth stability T(x) collapsed below 0.8500! Systemic spectral drift caused irreversible node desynchronization.
             </p>
             <button
               onClick={resetGame}
-              className="px-6 py-3 bg-[#FF007F] text-white font-extrabold rounded-xl text-xs uppercase tracking-widest shadow-[0_0_20px_#FF007F] hover:scale-105 transition-transform"
+              className="px-6 py-3 bg-[#f59e0b] text-black font-extrabold rounded-xl text-xs uppercase tracking-widest shadow-[0_0_20px_#f59e0b] hover:scale-105 transition-transform"
             >
               Restart Protocol
             </button>
@@ -432,13 +474,13 @@ export default function App() {
       <div className="flex-grow grid grid-cols-1 lg:grid-cols-12 gap-5 overflow-hidden">
 
         {/* LEFT RAIL: PUZZLE SPECTRUM CALIBRATOR (7 WAVELENGTHS) */}
-        <div className="lg:col-span-4 p-4 rounded-2xl border-2 border-[#00F0FF] bg-black/80 space-y-4 shadow-[0_0_20px_rgba(0,240,255,0.15)] flex flex-col justify-between">
+        <div className="lg:col-span-4 p-4 rounded-2xl border-2 border-[#a855f7] bg-black/80 space-y-4 shadow-[0_0_20px_rgba(168,85,247,0.15)] flex flex-col justify-between">
           <div>
-            <div className="flex justify-between items-center border-b border-[#00F0FF]/30 pb-2 mb-3">
+            <div className="flex justify-between items-center border-b border-[#a855f7]/30 pb-2 mb-3">
               <h2 className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-2">
-                <Sliders className="w-4 h-4 text-[#00F0FF]" /> 7-Wavelength Spectral Tuner
+                <Sliders className="w-4 h-4 text-[#a855f7]" /> 7-Wavelength Spectral Tuner
               </h2>
-              <span className="text-[10px] text-[#FF007F] font-bold">Target Match Required</span>
+              <span className="text-[10px] text-[#f59e0b] font-bold">Target Match Required</span>
             </div>
 
             {/* SLIDERS GRID */}
@@ -470,7 +512,7 @@ export default function App() {
                           newSpec[idx] = val;
                           setPlayerSpectrum(newSpec);
                         }}
-                        className="w-full h-2 bg-slate-900 rounded-lg appearance-none cursor-pointer accent-[#00F0FF]"
+                        className="w-full h-2 bg-slate-900 rounded-lg appearance-none cursor-pointer accent-[#a855f7]"
                       />
                     </div>
                   </div>
@@ -478,11 +520,11 @@ export default function App() {
               })}
             </div>
 
-            {/* SOLFEGGIO HARMONIC DIAL */}
-            <div className="mt-4 pt-3 border-t border-[#00F0FF]/30 space-y-2">
+            {/* SOLFEGGIO HARMONIC DIAL WITH REALTIME PHASE DETUNING */}
+            <div className="mt-4 pt-3 border-t border-[#a855f7]/30 space-y-2">
               <div className="flex justify-between text-[10px] font-bold text-white">
-                <span>SOLFEGGIO HARMONIC TUNER:</span>
-                <span className={harmonicFreq === 432 ? 'text-[#00FF41]' : 'text-[#FF007F]'}>
+                <span className="flex items-center gap-1"><Activity className="w-3 h-3 text-[#a855f7]" /> PHASE DETUNE TUNER:</span>
+                <span className={harmonicFreq === 432 ? 'text-[#00FF41]' : 'text-[#f59e0b]'}>
                   {harmonicFreq} Hz (Target: 432 Hz)
                 </span>
               </div>
@@ -492,7 +534,7 @@ export default function App() {
                 max="460"
                 value={harmonicFreq}
                 onChange={(e) => setHarmonicFreq(parseInt(e.target.value, 10))}
-                className="w-full h-2 bg-slate-900 rounded-lg appearance-none cursor-pointer accent-[#FF007F]"
+                className="w-full h-2 bg-slate-900 rounded-lg appearance-none cursor-pointer accent-[#f59e0b]"
               />
             </div>
           </div>
@@ -501,7 +543,7 @@ export default function App() {
           <button
             onClick={handleRoutePipeline}
             disabled={isProcessing || gameState !== 'PLAYING'}
-            className="w-full py-4 bg-gradient-to-r from-[#00F0FF] via-[#00FF41] to-[#FF007F] text-black font-black text-sm uppercase tracking-widest rounded-xl shadow-[0_0_25px_#00F0FF] hover:brightness-125 transition-all transform active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2 mt-2"
+            className="w-full py-4 bg-gradient-to-r from-[#a855f7] via-[#00FF41] to-[#f59e0b] text-black font-black text-sm uppercase tracking-widest rounded-xl shadow-[0_0_25px_#a855f7] hover:brightness-125 transition-all transform active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2 mt-2"
           >
             {isProcessing ? <RefreshCw className="w-5 h-5 animate-spin" /> : <Play className="w-5 h-5 fill-black" />}
             <span>{isProcessing ? 'CALIBRATING 9SM PIPELINE...' : 'ROUTE 9SM PIPELINE'}</span>
@@ -522,13 +564,13 @@ export default function App() {
 
             <div className="text-center py-2">
               <div className={`text-4xl font-black tracking-widest ${
-                txStability >= 0.9950 ? 'text-[#00FF41] drop-shadow-[0_0_12px_#00FF41]' :
-                txStability >= 0.9000 ? 'text-amber-400' : 'text-[#FF007F] animate-pulse drop-shadow-[0_0_12px_#FF007F]'
+                txStability >= 0.9950 ? 'text-[#a855f7] drop-shadow-[0_0_12px_#a855f7]' :
+                txStability >= 0.9000 ? 'text-[#f59e0b] animate-pulse' : 'text-white'
               }`}>
                 {txStability.toFixed(4)}
               </div>
               <div className="text-[10px] text-slate-400 uppercase tracking-widest mt-1">
-                CURRENT VERIDICAL STABILITY SCALAR
+                3-TIER VERIDICAL STABILITY STATE: <span className="text-white font-bold">{currentTier}</span>
               </div>
             </div>
 
@@ -536,8 +578,8 @@ export default function App() {
             <div className="w-full bg-slate-900 border border-slate-800 h-3 rounded-full overflow-hidden p-0.5">
               <div
                 className={`h-full rounded-full transition-all duration-500 ${
-                  txStability >= 0.9950 ? 'bg-[#00FF41] shadow-[0_0_10px_#00FF41]' :
-                  txStability >= 0.9000 ? 'bg-amber-400' : 'bg-[#FF007F]'
+                  txStability >= 0.9950 ? 'bg-[#a855f7] shadow-[0_0_10px_#a855f7]' :
+                  txStability >= 0.9000 ? 'bg-[#f59e0b]' : 'bg-white'
                 }`}
                 style={{ width: `${Math.min(100, Math.max(0, ((txStability - 0.800) / (1.000 - 0.800)) * 100))}%` }}
               ></div>
@@ -546,15 +588,15 @@ export default function App() {
             {/* ENTROPY METER */}
             <div className="pt-2 border-t border-slate-800 flex justify-between items-center text-xs">
               <span className="text-slate-400">Systemic Entropy:</span>
-              <span className={`font-bold ${entropy >= 50 ? 'text-[#FF007F]' : 'text-[#00F0FF]'}`}>
+              <span className={`font-bold ${entropy >= 50 ? 'text-[#f59e0b]' : 'text-[#a855f7]'}`}>
                 {entropy.toFixed(1)}%
               </span>
             </div>
           </div>
 
           {/* LOG TERMINAL */}
-          <div className="flex-grow border-2 border-[#00F0FF] rounded-2xl bg-black/95 flex flex-col overflow-hidden h-[320px]">
-            <div className="bg-[#00F0FF] text-black px-3 py-1.5 flex justify-between items-center text-[10px] font-black uppercase tracking-wider">
+          <div className="flex-grow border-2 border-[#a855f7] rounded-2xl bg-black/95 flex flex-col overflow-hidden h-[320px]">
+            <div className="bg-[#a855f7] text-white px-3 py-1.5 flex justify-between items-center text-[10px] font-black uppercase tracking-wider">
               <span>TERMINAL LOG STREAM</span>
               <span>STABILITY: {txStability >= 0.9950 ? 'OPTIMAL' : 'DEGRADED'}</span>
             </div>
@@ -564,8 +606,8 @@ export default function App() {
                 <div key={i} className="flex gap-2 opacity-90">
                   <span className="opacity-40 text-[10px]">[{log.ts}]</span>
                   <span className={`font-bold w-12 ${
-                    log.type === 'VICTORY' || log.type === 'RES' ? 'text-[#00FF41]' :
-                    log.type === 'FAIL' || log.type === 'COLLAPSE' ? 'text-[#FF007F]' : 'text-[#00F0FF]'
+                    log.type === 'VICTORY' || log.type === 'RES' ? 'text-[#a855f7]' :
+                    log.type === 'FAIL' || log.type === 'COLLAPSE' ? 'text-[#f59e0b]' : 'text-slate-200'
                   }`}>{log.type}</span>
                   <span className="flex-grow text-slate-200 break-all">{log.msg}</span>
                   <span className="opacity-40 italic text-[9px]">{log.tx}</span>
@@ -575,15 +617,15 @@ export default function App() {
             </div>
 
             {/* INPUT COMMAND */}
-            <div className="p-2 border-t border-[#00F0FF]/30 bg-[#050c0f]">
+            <div className="p-2 border-t border-[#a855f7]/30 bg-[#0c0514]">
               <div className="flex items-center gap-2">
-                <span className="text-[#00F0FF] font-bold text-xs animate-pulse">#_</span>
+                <span className="text-[#a855f7] font-bold text-xs animate-pulse">#_</span>
                 <input
                   type="text"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={handleCommand}
-                  className="bg-transparent border-none outline-none flex-grow text-[#00F0FF] text-xs font-mono placeholder-[#00F0FF]/30"
+                  className="bg-transparent border-none outline-none flex-grow text-[#a855f7] text-xs font-mono placeholder-[#a855f7]/30"
                   placeholder='Type "route", "help", "sys-audit", "freq-sync", "reset"...'
                 />
               </div>
@@ -592,12 +634,12 @@ export default function App() {
 
         </div>
 
-        {/* RIGHT RAIL: 9SM PIPELINE STAGES & GAME INSTRUCTIONS */}
-        <div className="lg:col-span-3 p-4 rounded-2xl border-2 border-[#FF007F] bg-black/80 space-y-4 shadow-[0_0_20px_rgba(255,0,127,0.15)] flex flex-col justify-between">
+        {/* RIGHT RAIL: 9SM PIPELINE STAGES & THREE-TIER VISUAL FEEDBACK */}
+        <div className="lg:col-span-3 p-4 rounded-2xl border-2 border-[#f59e0b] bg-black/80 space-y-4 shadow-[0_0_20px_rgba(245,158,11,0.15)] flex flex-col justify-between">
           <div className="space-y-4">
-            <div className="border-b border-[#FF007F]/30 pb-2">
+            <div className="border-b border-[#f59e0b]/30 pb-2">
               <h2 className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-2">
-                <Zap className="w-4 h-4 text-[#FF007F]" /> 9SM Pipeline Progression
+                <Zap className="w-4 h-4 text-[#f59e0b]" /> 9SM Pipeline Stages
               </h2>
             </div>
 
@@ -611,10 +653,10 @@ export default function App() {
                     key={s}
                     className={`h-8 rounded-lg flex items-center justify-center text-[10px] font-black border transition-all ${
                       isCurrent
-                        ? 'bg-[#FF007F] text-white border-white animate-pulse shadow-[0_0_12px_#FF007F]'
+                        ? 'bg-[#a855f7] text-white border-white animate-pulse shadow-[0_0_12px_#a855f7]'
                         : isActive
-                        ? 'bg-[#FF007F]/30 text-[#FF007F] border-[#FF007F]'
-                        : 'border-[#FF007F]/20 text-slate-600'
+                        ? 'bg-[#a855f7]/30 text-[#a855f7] border-[#a855f7]'
+                        : 'border-slate-800 text-slate-600'
                     }`}
                   >
                     S{s}
@@ -623,23 +665,23 @@ export default function App() {
               })}
             </div>
 
-            {/* OBJECTIVE RULES BOX */}
+            {/* THREE-TIER VISUAL FEEDBACK LEGEND */}
             <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-2 text-[10px] text-slate-300">
-              <span className="font-bold text-[#FF007F] uppercase block border-b border-slate-800 pb-1">
-                🎮 Objective & Rules
+              <span className="font-bold text-[#a855f7] uppercase block border-b border-slate-800 pb-1">
+                🎨 Three-Tier Feedback Tiers
               </span>
-              <p>
-                1. Adjust the 7 Wavelength sliders and 432Hz tuner to match the target spectrum.
-              </p>
-              <p>
-                2. Click <span className="text-[#00FF41] font-bold">ROUTE 9SM PIPELINE</span> to evaluate calibration accuracy.
-              </p>
-              <p>
-                3. <span className="text-[#00FF41] font-bold">WIN:</span> Achieve 10 consecutive calibrations with T(x) ≥ 0.9950.
-              </p>
-              <p>
-                4. <span className="text-[#FF007F] font-bold">LOSE:</span> T(x) drops below 0.8500 causing entropy collapse!
-              </p>
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 rounded bg-[#a855f7]"></span>
+                <span className="text-[#a855f7] font-bold">Electric Violet:</span> Optimal (T(x) ≥ 0.9950)
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 rounded bg-[#f59e0b]"></span>
+                <span className="text-[#f59e0b] font-bold">Flickering Amber:</span> Warning Drift
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 rounded bg-white"></span>
+                <span className="text-white font-bold">Static White:</span> Neutral/Noise State
+              </div>
             </div>
           </div>
 
@@ -653,7 +695,7 @@ export default function App() {
       {/* CUSTOM SCROLLBAR STYLES */}
       <style dangerouslySetInnerHTML={{ __html: `
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #00F0FF; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #a855f7; }
       `}} />
 
     </div>
