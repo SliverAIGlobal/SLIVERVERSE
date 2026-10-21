@@ -79,9 +79,9 @@ export default function App() {
 
   // System Logs
   const [logs, setLogs] = useState([
-    { ts: "00:00:00", type: "SYS", msg: `SOVEREIGN PROTOCOL TOURNAMENT (ROUND 1/${ENGINE_CONFIG.TOURNAMENT_ROUNDS}) INITIALIZED.`, tx: 1.0000 },
+    { ts: "00:00:00", type: "SYS", msg: `VANGUARD SHADOW SINGLE-PLAYER PROTOCOL INITIALIZED.`, tx: 1.0000 },
     { ts: "00:00:01", type: "GOAL", msg: `TARGET STREAK: ${ENGINE_CONFIG.TARGET_PIPELINES} PIPELINES ABOVE T(x) ≥ ${ENGINE_CONFIG.TX_WIN_THRESHOLD}.`, tx: 0.9998 },
-    { ts: "00:00:02", type: "WARN", msg: `CRITICAL COLLAPSE THRESHOLD: T(x) < ${ENGINE_CONFIG.TX_LOSE_THRESHOLD}.`, tx: 0.9950 }
+    { ts: "00:00:02", type: "WARN", msg: `DIRECTIVES ACTIVE: [4] SLI-SHIFT | [5] FREQ-SYNC 528Hz | [6] GENESIS PROTOCOL`, tx: 0.9950 }
   ]);
 
   const logEndRef = useRef(null);
@@ -230,6 +230,39 @@ export default function App() {
     showToast('🔄 Tournament Reset');
   };
 
+  // VANGUARD SLI-SHIFT (Option 4)
+  const executeVanguardSliShift = () => {
+    // Automatically match Green 530nm and Violet 400nm to shadow optimal spectrum
+    const updated = [...playerSpectrum];
+    updated[0] = targetSpectrum[0]; // Violet
+    updated[3] = targetSpectrum[3]; // Green 530nm
+    setPlayerSpectrum(updated);
+    setTxStability(prev => Math.min(0.9998, prev + 0.0040));
+    setEntropy(prev => Math.max(1.0, prev - 5.0));
+    pushLog('VANGUARD', '[4] VANGUARD SLI-SHIFT EXECUTED: GREEN 530nm & VIOLET 400nm SPECTRAL SHADOW REALIGNED (+0.0040 T(x)).');
+    showToast('⚡ [4] Vanguard Sli-Shift Executed!');
+  };
+
+  // FREQ-SYNC 528Hz (Option 5)
+  const executeFreqSync528 = () => {
+    setHarmonicFreq(528);
+    playStageChime(528);
+    setTxStability(prev => Math.min(0.9998, prev + 0.0035));
+    pushLog('HARMONIC', '[5] FREQ-SYNC [528Hz] ENGAGED: SOLFEGGIO TRANSFORMATION FREQUENCY APPLIED (+0.0035 T(x)).');
+    showToast('🎶 [5] 528Hz Solfeggio Transformation Active!');
+  };
+
+  // GENESIS PROTOCOL LEVEL 6 (Option 6)
+  const executeGenesisProtocol = () => {
+    // 81-dimensional tensor scan: reveals exact target spectrum for all 7 bands
+    setPlayerSpectrum([...targetSpectrum]);
+    setHarmonicFreq(432);
+    setTxStability(0.9998);
+    setEntropy(0.0);
+    pushLog('GENESIS', '[6] GENESIS PROTOCOL LEVEL 6 EXECUTED: 81-DIMENSIONAL TENSOR SCAN COMPLETE. ALL BANDS PERFECTLY ALIGNED [T(x) = 0.9998].');
+    showToast('👁️ [6] Genesis Level 6 Tensor Scan Complete!');
+  };
+
   // ROUTE 9SM PIPELINE CALIBRATION ACTION
   const handleRoutePipeline = async () => {
     if (isProcessing || cooldownTime > 0 || gameState !== 'PLAYING') return;
@@ -331,8 +364,20 @@ export default function App() {
       const cmd = cmdRaw.toLowerCase();
       setInput('');
 
+      if (cmd === '4' || cmd === 'vanguard' || cmd === 'sli-shift') {
+        executeVanguardSliShift();
+        return;
+      }
+      if (cmd === '5' || cmd === '528' || cmd === 'freq-sync') {
+        executeFreqSync528();
+        return;
+      }
+      if (cmd === '6' || cmd === 'genesis') {
+        executeGenesisProtocol();
+        return;
+      }
       if (cmd === 'help') {
-        pushLog('CMD', 'DIRECTIVES: route | sys-audit | freq-sync | deconstruct | reset | token');
+        pushLog('CMD', 'DIRECTIVES: [4] sli-shift | [5] 528 | [6] genesis | route | sys-audit | reset');
         return;
       }
       if (cmd === 'route') {
@@ -347,17 +392,8 @@ export default function App() {
         pushLog('AUDIT', `T(x): ${txStability.toFixed(4)} | ROUND: ${currentRound}/3 | STREAK: ${consecutivePipelines}/10 | ENTROPY: ${entropy.toFixed(1)}%`);
         return;
       }
-      if (cmd === 'freq-sync') {
-        setHarmonicFreq(432);
-        pushLog('HARMONIC', 'HARMONIC RESIDUAL REALIGNED TO 432Hz GROUNDING.');
-        return;
-      }
-      if (cmd === 'deconstruct') {
-        pushLog('SPEC', '7-WAVELENGTH DECONSTRUCTION: ACTIVE SPECTRAL ERROR MAPPED.');
-        return;
-      }
 
-      pushLog('CMD', `UNKNOWN DIRECTIVE: ${cmdRaw}. TYPE "help" OR USE INTERACTIVE PANELS.`);
+      pushLog('CMD', `UNKNOWN DIRECTIVE: ${cmdRaw}. TYPE "4", "5", "6", "route", OR "help".`);
     }
   };
 
@@ -406,11 +442,11 @@ export default function App() {
               currentTier === 'AMBER' ? 'bg-[#f59e0b]/20 border border-[#f59e0b] text-[#f59e0b] animate-pulse shadow-[0_0_10px_#f59e0b]' :
               'bg-white/20 border border-white text-white'
             }`}>
-              Tournament Round {currentRound}/{ENGINE_CONFIG.TOURNAMENT_ROUNDS}
+              Vanguard Shadow Mode // Round {currentRound}/{ENGINE_CONFIG.TOURNAMENT_ROUNDS}
             </span>
           </div>
           <p className="text-[11px] opacity-80 mt-1">
-            Editor Settings: Streak Target: {ENGINE_CONFIG.TARGET_PIPELINES} | Win: ≥ {ENGINE_CONFIG.TX_WIN_THRESHOLD} | Lose: &lt; {ENGINE_CONFIG.TX_LOSE_THRESHOLD} | Cooldown: {ENGINE_CONFIG.DIRECTIVE_COOLDOWN_MS}ms
+            Solo-Node Mode: Heather Soares // Node {ENGINE_CONFIG.NODE} // Epoch 2026-10-20
           </p>
         </div>
 
@@ -660,7 +696,7 @@ export default function App() {
                   onKeyDown={handleCommand}
                   disabled={cooldownTime > 0}
                   className="bg-transparent border-none outline-none flex-grow text-[#a855f7] text-xs font-mono placeholder-[#a855f7]/30"
-                  placeholder={cooldownTime > 0 ? `COOLDOWN ACTIVE (${(cooldownTime / 1000).toFixed(1)}s)...` : 'Type "route", "help", "sys-audit", "reset"...'}
+                  placeholder={cooldownTime > 0 ? `COOLDOWN ACTIVE (${(cooldownTime / 1000).toFixed(1)}s)...` : 'Type "4", "5", "6", "route", "help"...'}
                 />
               </div>
             </div>
@@ -668,48 +704,67 @@ export default function App() {
 
         </div>
 
-        {/* RIGHT RAIL: GAME EDITOR PROPERTIES & RULES */}
+        {/* RIGHT RAIL: VANGUARD SHADOW DIRECTIVES & GAME RULES */}
         <div className="lg:col-span-3 p-4 rounded-2xl border-2 border-[#f59e0b] bg-black/80 space-y-4 shadow-[0_0_20px_rgba(245,158,11,0.15)] flex flex-col justify-between">
           <div className="space-y-4">
             <div className="border-b border-[#f59e0b]/30 pb-2">
               <h2 className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-2">
-                <Settings className="w-4 h-4 text-[#f59e0b]" /> Game Editor Properties
+                <Zap className="w-4 h-4 text-[#f59e0b]" /> Directives [Vanguard Shadow]
               </h2>
             </div>
 
+            {/* VANGUARD DIRECTIVE BUTTONS */}
+            <div className="space-y-2">
+              <button
+                onClick={executeVanguardSliShift}
+                className="w-full py-2.5 px-3 bg-[#a855f7]/20 border border-[#a855f7] hover:bg-[#a855f7]/40 text-[#a855f7] font-bold text-[11px] rounded-xl text-left transition-all flex items-center justify-between"
+              >
+                <span>[4] VANGUARD SLI-SHIFT</span>
+                <span className="text-[9px] text-[#00FF41]">+0.0040 T(x)</span>
+              </button>
+
+              <button
+                onClick={executeFreqSync528}
+                className="w-full py-2.5 px-3 bg-[#f59e0b]/20 border border-[#f59e0b] hover:bg-[#f59e0b]/40 text-[#f59e0b] font-bold text-[11px] rounded-xl text-left transition-all flex items-center justify-between"
+              >
+                <span>[5] FREQ-SYNC [528Hz]</span>
+                <span className="text-[9px] text-[#f59e0b]">+0.0035 T(x)</span>
+              </button>
+
+              <button
+                onClick={executeGenesisProtocol}
+                className="w-full py-2.5 px-3 bg-white/10 border border-white hover:bg-white/20 text-white font-bold text-[11px] rounded-xl text-left transition-all flex items-center justify-between"
+              >
+                <span>[6] GENESIS PROTOCOL L6</span>
+                <span className="text-[9px] text-[#00FF41]">PERFECT MATCH</span>
+              </button>
+            </div>
+
             {/* PROPERTIES LEGEND */}
-            <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-2 text-[10px] text-slate-300">
+            <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-1.5 text-[10px] text-slate-300">
               <div className="flex justify-between border-b border-slate-800 pb-1">
-                <span className="text-slate-400">Target Pipeline Streak:</span>
+                <span className="text-slate-400">Target Streak:</span>
                 <span className="text-[#00FF41] font-bold">{ENGINE_CONFIG.TARGET_PIPELINES}</span>
               </div>
               <div className="flex justify-between border-b border-slate-800 pb-1">
-                <span className="text-slate-400">Optimal T(x) Threshold:</span>
-                <span className="text-[#a855f7] font-bold">{ENGINE_CONFIG.TX_WIN_THRESHOLD}</span>
+                <span className="text-slate-400">Optimal T(x):</span>
+                <span className="text-[#a855f7] font-bold">≥ {ENGINE_CONFIG.TX_WIN_THRESHOLD}</span>
               </div>
               <div className="flex justify-between border-b border-slate-800 pb-1">
-                <span className="text-slate-400">Collapse T(x) Threshold:</span>
-                <span className="text-[#f59e0b] font-bold">{ENGINE_CONFIG.TX_LOSE_THRESHOLD}</span>
+                <span className="text-slate-400">Collapse T(x):</span>
+                <span className="text-[#f59e0b] font-bold">&lt; {ENGINE_CONFIG.TX_LOSE_THRESHOLD}</span>
               </div>
               <div className="flex justify-between border-b border-slate-800 pb-1">
-                <span className="text-slate-400">Base Entropy Decay Rate:</span>
+                <span className="text-slate-400">Entropy Decay:</span>
                 <span className="text-white font-bold">{ENGINE_CONFIG.BASE_ENTROPY_DECAY_RATE}/s</span>
               </div>
               <div className="flex justify-between border-b border-slate-800 pb-1">
-                <span className="text-slate-400">Phase Lock Surge Bonus:</span>
-                <span className="text-[#00FF41] font-bold">+{ENGINE_CONFIG.PHASE_LOCK_SURGE_BONUS} T(x)</span>
+                <span className="text-slate-400">Phase Lock Surge:</span>
+                <span className="text-[#00FF41] font-bold">+{ENGINE_CONFIG.PHASE_LOCK_SURGE_BONUS}</span>
               </div>
               <div className="flex justify-between border-b border-slate-800 pb-1">
-                <span className="text-slate-400">Directive Cooldown:</span>
-                <span className="text-white font-bold">{ENGINE_CONFIG.DIRECTIVE_COOLDOWN_MS} ms</span>
-              </div>
-              <div className="flex justify-between border-b border-slate-800 pb-1">
-                <span className="text-slate-400">Default Music Volume:</span>
-                <span className="text-white font-bold">{ENGINE_CONFIG.DEFAULT_MUSIC_VOLUME}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-400">Tournament Rounds:</span>
-                <span className="text-[#a855f7] font-bold">{ENGINE_CONFIG.TOURNAMENT_ROUNDS}</span>
+                <span className="text-slate-400">Command Cooldown:</span>
+                <span className="text-white font-bold">{ENGINE_CONFIG.DIRECTIVE_COOLDOWN_MS}ms</span>
               </div>
             </div>
           </div>
