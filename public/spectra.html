@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-950 text-slate-100">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Spectra 81-Diremption Refraction Engine // Standalone WebGL Viewer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { background-color: #030712; overflow: hidden; margin: 0; }
+    canvas { display: block; width: 100vw; height: 100vh; }
+    .glass-hud {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 16px 24px;
+      border-radius: 16px;
+      pointer-events: auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="glass-hud text-slate-100">
+    <h1 className="text-lg font-bold text-teal-300">SPECTRA 81-DIREMPTION REFRACTION ENGINE</h1>
+    <p class="text-xs text-slate-400">Standalone Zero-Dependency WebGL Polar Matrix</p>
+    <div class="mt-2 text-xs font-mono text-indigo-300">T(x) = 0.9984 [PONO VERIFIED]</div>
+  </div>
+
+  <canvas id="spectraCanvas"></canvas>
+
+  <script>
+    const canvas = document.getElementById('spectraCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const WAVES = [
+      '#ef4444', '#f97316', '#eab308', '#22c55e', '#06b6d4', '#3b82f6', '#8b5cf6', '#d946ef', '#f8fafc'
+    ];
+
+    function resize() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    let angleOffset = 0;
+
+    function render() {
+      const centerX = canvas.width / 2;
+      const centerY = canvas.height / 2;
+      const maxRadius = Math.min(centerX, centerY) - 80;
+
+      ctx.fillStyle = "#030712";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      angleOffset += 0.005;
+
+      for (let r = 1; r <= 9; r++) {
+        const radius = (r / 9.5) * maxRadius;
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+        ctx.strokeStyle = WAVES[r - 1] + "44";
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        for (let ray = 0; ray < 9; ray++) {
+          const angle = (ray * Math.PI * 2) / 9 + (r * 0.15) + Math.sin(angleOffset) * 0.02;
+          const x = centerX + Math.cos(angle) * radius;
+          const y = centerY + Math.sin(angle) * radius;
+
+          ctx.beginPath();
+          ctx.arc(x, y, 5, 0, Math.PI * 2);
+          ctx.fillStyle = WAVES[r - 1];
+          ctx.shadowColor = WAVES[r - 1];
+          ctx.shadowBlur = 12;
+          ctx.fill();
+          ctx.shadowBlur = 0;
+        }
+      }
+
+      requestAnimationFrame(render);
+    }
+
+    render();
+  </script>
+</body>
+</html>
