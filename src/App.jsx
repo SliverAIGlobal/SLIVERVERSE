@@ -6,6 +6,7 @@ import {
   MessageSquareText, HelpCircle, ChevronRight, Play, Filter, Zap,
   Bookmark, Send, ExternalLink, Trophy, SmilePlus, Feather
 } from 'lucide-react';
+import SpectraRefractionEngine from './components/SpectraRefractionEngine';
 
 // --- SERVICE & APP CONFIGURATION ---
 const GEMINI_MODEL = "gemini-2.5-flash-preview-09-2025";
@@ -259,7 +260,7 @@ const STUDIO_PRESETS = [
 
 // --- MAIN APP COMPONENT ---
 export default function App() {
-  const [activeTab, setActiveTab] = useState('decipher'); // decipher, studio, library, translator
+  const [activeTab, setActiveTab] = useState('spectra'); // spectra, decipher, studio, library, translator
   const [themeMode, setThemeMode] = useState('dark');
   const [joyOrbs, setJoyOrbs] = useState(() => {
     return parseInt(localStorage.getItem('EMOJI_JOY_ORBS') || '120', 10);
@@ -552,6 +553,17 @@ export default function App() {
           {/* TABS NAVIGATION */}
           <nav className="hidden md:flex items-center space-x-1 bg-slate-900/60 p-1.5 rounded-2xl border border-slate-800/80">
             <button
+              onClick={() => setActiveTab('spectra')}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                activeTab === 'spectra'
+                  ? 'bg-gradient-to-r from-cyan-600 to-purple-600 text-white shadow-md'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5 text-cyan-300" /> SPECTRA Engine
+            </button>
+
+            <button
               onClick={() => setActiveTab('decipher')}
               className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
                 activeTab === 'decipher'
@@ -642,6 +654,14 @@ export default function App() {
         {/* MOBILE BOTTOM / NAVIGATION STRIP */}
         <div className="flex md:hidden justify-around pt-2 border-t border-slate-800/60 mt-2">
           <button
+            onClick={() => setActiveTab('spectra')}
+            className={`p-2 rounded-xl text-[11px] font-bold flex flex-col items-center gap-1 ${
+              activeTab === 'spectra' ? 'text-cyan-400' : 'text-slate-400'
+            }`}
+          >
+            <Sparkles className="w-4 h-4" /> SPECTRA
+          </button>
+          <button
             onClick={() => setActiveTab('decipher')}
             className={`p-2 rounded-xl text-[11px] font-bold flex flex-col items-center gap-1 ${
               activeTab === 'decipher' ? 'text-purple-400' : 'text-slate-400'
@@ -678,6 +698,11 @@ export default function App() {
 
       {/* MAIN CONTENT AREA */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 space-y-6">
+
+        {/* TAB 0: SPECTRA REFRACTION ENGINE */}
+        {activeTab === 'spectra' && (
+          <SpectraRefractionEngine activeParadigm="SPECTRA" setActiveParadigm={setActiveTab} />
+        )}
 
         {/* TAB 1: EMOJI DECIPHER TOOL */}
         {activeTab === 'decipher' && (
