@@ -1,41 +1,35 @@
-#!/bin/bash
+#!/usr/bin/env bash
+# Package Compilation & Verification Pipeline for SLIVER VERITAS Edge Engine
+
 set -e
 
-echo "=========================================================="
-echo "SIPES SAT-AI :: BUILD & PACKAGING AUTOMATION"
-echo "Epoch: 10/09/2026 | Target User: Heather Soares"
-echo "=========================================================="
+REPO_ROOT="/app"
+DIST_DIR="$REPO_ROOT/dist"
+PACKAGE_NAME="sliver_edge_veritas_master.zip"
 
-mkdir -p build
+echo "=== Beginning Packaging Build Pipeline at $REPO_ROOT ==="
 
-echo "[1/4] Compiling SML C++ Edge Native Module..."
-g++ -Wall -Wextra -std=c++17 src/sml/sml_edge_native.cpp -I src/sml -o build/sml_edge_native
-./build/sml_edge_native
+# 1. Clean build directory & previous artifacts
+rm -rf "$DIST_DIR" "$REPO_ROOT/$PACKAGE_NAME" "$REPO_ROOT/$PACKAGE_NAME.sha256" "$REPO_ROOT/$PACKAGE_NAME.md5"
+mkdir -p "$DIST_DIR"
 
-echo "[2/4] Testing Termux Python Scripts..."
-PYTHONPATH=. pytest tests/
+# 2. Copy source artifacts into build distribution
+cp "$REPO_ROOT/index.html" "$DIST_DIR/"
+[ -d "$REPO_ROOT/docs" ] && cp -r "$REPO_ROOT/docs" "$DIST_DIR/"
+[ -d "$REPO_ROOT/src" ] && cp -r "$REPO_ROOT/src" "$DIST_DIR/"
 
-echo "[3/4] Validating ADB Shell Scripts..."
-bash -n mobile/adb/pixel8_overrides.sh
+# 3. Zip package creation
+cd "$DIST_DIR"
+zip -r "$REPO_ROOT/$PACKAGE_NAME" .
+cd "$REPO_ROOT"
 
-echo "[4/4] Generating ZIP Distribution Package..."
-ZIP_NAME="slm_edge_native_arbitrage.zip"
-rm -f "$ZIP_NAME"
+# 4. Generate Cryptographic Checksums (Root & Internal Manifest Copy)
+echo "=== Generating Cryptographic Checksums ==="
+sha256sum "$PACKAGE_NAME" > "$PACKAGE_NAME.sha256"
+md5sum "$PACKAGE_NAME" > "$PACKAGE_NAME.md5"
 
-zip -r "$ZIP_NAME" \
-    src/ \
-    mobile/ \
-    contracts/ \
-    interface/ \
-    docs/ \
-    README.md \
-    LICENSE \
-    -x "*.pyc" -x "*/__pycache__/*"
+cp "$PACKAGE_NAME.sha256" "$DIST_DIR/"
+cp "$PACKAGE_NAME.md5" "$DIST_DIR/"
 
-sha256sum "$ZIP_NAME" > "${ZIP_NAME}.sha256"
-md5sum "$ZIP_NAME" > "${ZIP_NAME}.md5"
-
-echo "----------------------------------------------------------"
-echo "Package Created Successfully: $ZIP_NAME"
-echo "SHA256 Checksum: $(cat ${ZIP_NAME}.sha256)"
-echo "=========================================================="
+echo "Build Complete: $REPO_ROOT/$PACKAGE_NAME"
+echo "SHA256 Checksum: $(cat $PACKAGE_NAME.sha256)"

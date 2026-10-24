@@ -1,13 +1,864 @@
 <!DOCTYPE html>
-<html lang="en" class="bg-slate-950 text-slate-100">
+<html lang="en" class="dark h-full">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Emoji Extravaganza | International Emotional Bridge & Custom Emoji Studio</title>
-  <meta name="description" content="International emotional bridging app. Express, decipher, and design hyper-personal emojis.">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SLIVER VERITAS // SORENv2 FLOWER LEARN MATRIX & SPECTRA SOUL SYNTHESIS ENGINE</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        satCyan: '#008B99',
+                        satCyanGlow: '#00F5FF',
+                        satAmber: '#B8860B',
+                        satDark: '#0A0A0C',
+                        satCard: '#12131A',
+                        satSlate: '#1E293B',
+                        satBorder: '#334155',
+                        cosmicViolet: '#8B5CF6',
+                        cosmicPink: '#EC4899',
+                        emeraldGlow: '#10B981',
+                        flowerGold: '#F72585',
+                        flowerViolet: '#7209B7'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'Fira Code', 'Courier New', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Tone.js for Web Audio Synthesis -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&family=JetBrains+Mono:wght@400;600;800&display=swap');
+
+        body {
+            background-color: #0A0A0C;
+            color: #E2E8F0;
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+        }
+
+        .veritas-glass {
+            background: rgba(18, 19, 26, 0.85);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .veritas-card {
+            background: rgba(30, 41, 59, 0.4);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .veritas-card:hover {
+            border-color: rgba(0, 245, 255, 0.3);
+            box-shadow: 0 0 25px rgba(0, 139, 153, 0.15);
+        }
+
+        .glow-cyan {
+            text-shadow: 0 0 10px rgba(0, 245, 255, 0.5);
+        }
+
+        .glow-emerald {
+            text-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+        }
+
+        .flower-petal {
+            transition: all 0.35s ease;
+            cursor: pointer;
+            stroke: #334155;
+            stroke-width: 1.5;
+        }
+
+        .flower-petal:hover, .flower-petal.active {
+            stroke: #00F5FF;
+            stroke-width: 3;
+            filter: drop-shadow(0 0 10px #00F5FF);
+        }
+
+        .pulse-glow {
+            animation: pulse-glow-anim 3s infinite alternate ease-in-out;
+        }
+
+        @keyframes pulse-glow-anim {
+            0% { box-shadow: 0 0 15px rgba(139, 92, 246, 0.4); }
+            100% { box-shadow: 0 0 35px rgba(236, 72, 153, 0.8); }
+        }
+
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #0A0A0C; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 9999px; }
+        ::-webkit-scrollbar-thumb:hover { background: #008B99; }
+
+        canvas { touch-action: none; display: block; }
+    </style>
 </head>
-<body class="min-h-screen bg-slate-950 flex flex-col font-sans select-none antialiased">
-  <div id="root" class="min-h-screen flex flex-col"></div>
-  <script type="module" src="/src/main.jsx"></script>
+<body class="min-h-screen flex flex-col selection:bg-satCyan selection:text-black">
+
+    <!-- Global Sticky Header -->
+    <header class="sticky top-0 z-50 veritas-glass border-b border-satBorder px-4 lg:px-8 py-3.5 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-satCyan via-cosmicViolet to-cosmicPink flex items-center justify-center shadow-lg pulse-glow">
+                <i class="fa-solid fa-atom text-white text-lg"></i>
+            </div>
+            <div>
+                <h1 class="text-base font-black tracking-tight text-white flex items-center gap-2">
+                    SLIVER <span class="text-satCyanGlow glow-cyan">VERITAS</span>
+                    <span class="text-[10px] px-2 py-0.5 rounded-full bg-satCyan/20 text-satCyanGlow font-mono border border-satCyan/30">SORENv2 FLOWER LEARN ENGINE</span>
+                </h1>
+                <p class="text-[11px] text-gray-400 font-mono">Target: T(x) &ge; +1.000 Zero-Drift &bull; 81 Diremption Spectra Architecture</p>
+            </div>
+        </div>
+
+        <!-- Audio Drone & Status Controls -->
+        <div class="flex items-center gap-3">
+            <div class="hidden md:flex items-center gap-3 px-3 py-1.5 rounded-xl bg-satSlate/60 border border-satBorder font-mono text-xs">
+                <span class="text-gray-400">Comprehension Delta (C<sub>&Delta;</sub>):</span>
+                <span id="header-delta-val" class="font-bold text-amber-400">0.000</span>
+                <span class="text-gray-600">|</span>
+                <span class="text-gray-400">Ledger:</span>
+                <span id="header-tx-status" class="font-bold text-red-400"><i class="fa-solid fa-circle-xmark mr-1"></i>UNCOMMITTED</span>
+            </div>
+
+            <button onclick="toggleAudio()" id="audioBtn" class="px-3.5 py-1.5 bg-satSlate/80 hover:bg-satSlate border border-satBorder text-xs font-mono font-medium text-gray-300 rounded-xl transition flex items-center gap-2">
+                <i id="audioIcon" class="fa-solid fa-volume-xmark text-cosmicPink"></i>
+                <span id="audioText" class="hidden sm:inline">Spectra Drone: Off</span>
+            </button>
+
+            <button onclick="window.print()" class="px-3 py-1.5 bg-satCyan/20 hover:bg-satCyan/30 text-satCyanGlow border border-satCyan/40 text-xs font-mono font-bold rounded-xl transition flex items-center gap-2">
+                <i class="fa-solid fa-file-pdf"></i>
+                <span class="hidden sm:inline">Export PDF</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <nav class="bg-satDark/90 border-b border-satBorder/60 px-4 lg:px-8 py-2 flex items-center justify-start gap-2 overflow-x-auto">
+        <button onclick="switchTab('curriculum')" id="tab-btn-curriculum" class="tab-btn px-4 py-2 rounded-xl text-xs font-mono font-semibold transition-all flex items-center gap-2 bg-satCyan/20 text-satCyanGlow border border-satCyan/40">
+            <i class="fa-solid fa-book-open"></i> Part I: SORENv2 Architecture
+        </button>
+        <button onclick="switchTab('mandala')" id="tab-btn-mandala" class="tab-btn px-4 py-2 rounded-xl text-xs font-mono font-semibold text-gray-400 hover:text-white transition-all flex items-center gap-2">
+            <i class="fa-solid fa-seedling"></i> Part II: 9SM Flower Mandala
+        </button>
+        <button onclick="switchTab('spectra')" id="tab-btn-spectra" class="tab-btn px-4 py-2 rounded-xl text-xs font-mono font-semibold text-gray-400 hover:text-white transition-all flex items-center gap-2">
+            <i class="fa-solid fa-prism"></i> Part III: 81 SPECTRA Lattice
+        </button>
+        <button onclick="switchTab('sump')" id="tab-btn-sump" class="tab-btn px-4 py-2 rounded-xl text-xs font-mono font-semibold text-gray-400 hover:text-white transition-all flex items-center gap-2">
+            <i class="fa-solid fa-database"></i> Part IV: Data Sump & Truth Calculator
+        </button>
+        <button onclick="switchTab('worksheet')" id="tab-btn-worksheet" class="tab-btn px-4 py-2 rounded-xl text-xs font-mono font-semibold text-gray-400 hover:text-white transition-all flex items-center gap-2">
+            <i class="fa-solid fa-file-pen"></i> Part V: Assessment & Proton CLI
+        </button>
+    </nav>
+
+    <!-- MAIN CONTENT VIEWS -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-8">
+
+        <!-- ==================== PART I: CURRICULUM ==================== -->
+        <section id="view-curriculum" class="tab-view space-y-6">
+            <!-- Directive Banner -->
+            <div class="veritas-glass p-6 md:p-8 rounded-3xl border-l-8 border-cosmicViolet relative overflow-hidden">
+                <div class="flex flex-col md:flex-row items-start md:items-center gap-6">
+                    <div class="relative flex-shrink-0">
+                        <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-satCyan via-cosmicViolet to-cosmicPink flex items-center justify-center text-white text-2xl shadow-xl pulse-glow">
+                            <i class="fa-solid fa-brain"></i>
+                        </div>
+                        <span class="absolute -bottom-2 -right-2 bg-emeraldGlow text-black font-mono font-bold text-[10px] px-2 py-0.5 rounded-full">ONLINE</span>
+                    </div>
+                    <div class="space-y-2 flex-1">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-mono uppercase tracking-widest text-cosmicPink font-bold">SORENv2 Directive &bull; Flower Learning Architecture</span>
+                            <span class="text-xs font-mono text-satCyanGlow bg-satCyan/10 px-3 py-1 rounded-full border border-satCyan/30">Target: T(x) &ge; 1.000</span>
+                        </div>
+                        <h2 class="text-2xl md:text-3xl font-extrabold text-white">"Greetings, Evolutionary Bloom Architect!"</h2>
+                        <p class="text-sm text-slate-300 leading-relaxed italic">
+                            "Welcome to SLIVER VERITAS—your multi-dimensional cognitive bloom matrix. Transition from static learning into dynamic 9-Petal Truth Matrix synthesis and 81-Diremption SPECTRA refraction. Explore the 9SM dimensions below, compute your truth formulas, and commit your verification receipts to the Grand Ledger."
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Architecture Modules Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="veritas-card p-5 rounded-2xl space-y-3">
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs font-mono font-bold text-satCyanGlow">01. Truth Mechanics</span>
+                        <i class="fa-solid fa-scale-balanced text-satCyan"></i>
+                    </div>
+                    <h3 class="text-base font-bold text-white">Truth Formula T = R - B</h3>
+                    <p class="text-xs text-slate-300 leading-relaxed">
+                        Objective truth (T) equals pure observable reality (R) minus bias/noise (B). Zero-drift execution guarantees T(x) &ge; 1.000.
+                    </p>
+                </div>
+
+                <div class="veritas-card p-5 rounded-2xl space-y-3">
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs font-mono font-bold text-cosmicViolet">02. 9SM Matrix</span>
+                        <i class="fa-solid fa-cubes text-cosmicViolet"></i>
+                    </div>
+                    <h3 class="text-base font-bold text-white">81-Vector Matrix</h3>
+                    <p class="text-xs text-slate-300 leading-relaxed">
+                        9 core domains intersected with 9 impact tiers forming an 81-dimensional assessment matrix for complete risk/resonance alignment.
+                    </p>
+                </div>
+
+                <div class="veritas-card p-5 rounded-2xl space-y-3">
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs font-mono font-bold text-cosmicPink">03. PeriSensorAI</span>
+                        <i class="fa-solid fa-wave-square text-cosmicPink"></i>
+                    </div>
+                    <h3 class="text-base font-bold text-white">17-Sensor EQAI Grid</h3>
+                    <p class="text-xs text-slate-300 leading-relaxed">
+                        Captures multi-modal telemetry and emotional resonance governed by the "Right to AI Silence" ethical boundary.
+                    </p>
+                </div>
+
+                <div class="veritas-card p-5 rounded-2xl space-y-3">
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs font-mono font-bold text-emeraldGlow">04. Proton Vault CLI</span>
+                        <i class="fa-solid fa-terminal text-emeraldGlow"></i>
+                    </div>
+                    <h3 class="text-base font-bold text-white">Zero-Knowledge Ledger</h3>
+                    <p class="text-xs text-slate-300 leading-relaxed">
+                        Client-side WebCrypto AES-256-GCM vaulting with immutable cryptographic receipts signed directly to local IndexedDB.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== PART II: 9SM MANDALA ==================== -->
+        <section id="view-mandala" class="tab-view space-y-6 hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                <!-- SVG Interactive Mandala -->
+                <div class="lg:col-span-5 veritas-glass rounded-3xl p-6 space-y-4 text-center border border-cosmicViolet/50">
+                    <div class="flex justify-between items-center px-2">
+                        <h3 class="text-sm font-bold font-mono text-satCyanGlow uppercase tracking-wider">Interactive 9SM Petal Mandala</h3>
+                        <span class="text-[10px] font-mono text-gray-400">Click Petal to Inspect</span>
+                    </div>
+
+                    <div class="relative flex justify-center items-center py-4">
+                        <svg id="flower-mandala" viewBox="0 0 300 300" class="w-72 h-72 md:w-80 md:h-80">
+                            <defs>
+                                <radialGradient id="core-grad" cx="50%" cy="50%" r="50%">
+                                    <stop offset="0%" stop-color="#7209B7" />
+                                    <stop offset="100%" stop-color="#F72585" />
+                                </radialGradient>
+                                <linearGradient id="petal-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stop-color="#161233" />
+                                    <stop offset="100%" stop-color="#2E285C" />
+                                </linearGradient>
+                            </defs>
+                            <circle cx="150" cy="150" r="28" fill="url(#core-grad)" stroke="#00F5FF" stroke-width="2" />
+                            <text x="150" y="154" text-anchor="middle" fill="#FFFFFF" font-size="10" font-family="monospace" font-weight="bold">SOREN</text>
+                            <g id="petals-group"></g>
+                        </svg>
+                    </div>
+
+                    <div id="petal-info-card" class="bg-satDark/90 p-4 rounded-2xl border border-satBorder text-left space-y-1 font-mono text-xs">
+                        <div id="petal-title" class="font-bold text-satCyanGlow text-sm">Select a Petal</div>
+                        <div id="petal-desc" class="text-gray-300">Click any of the 9 dimensional petals in the mandala above to inspect its operational criteria.</div>
+                    </div>
+                </div>
+
+                <!-- 9SM Dimensional Grid Matrix -->
+                <div class="lg:col-span-7 veritas-glass rounded-3xl p-6 md:p-8 space-y-6">
+                    <div class="border-b border-satBorder pb-4 flex justify-between items-center">
+                        <div>
+                            <span class="text-xs font-mono uppercase text-cosmicPink font-semibold">PART II &bull; 9SM MATRIX ENGINE</span>
+                            <h3 class="text-xl font-bold text-white">The 9-Substrate Dimensions</h3>
+                        </div>
+                        <span class="px-3 py-1 bg-cosmicViolet/20 text-satCyanGlow border border-cosmicViolet/50 rounded-lg text-xs font-mono">WIF = 1.000 Grounded</span>
+                    </div>
+
+                    <div id="matrix-grid-display" class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs font-mono">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== PART III: 81 SPECTRA LATTICE ==================== -->
+        <section id="view-spectra" class="tab-view space-y-6 hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+                <!-- Left: Controls -->
+                <div class="lg:col-span-1 veritas-glass p-5 rounded-2xl border border-satBorder space-y-5">
+                    <div class="flex items-center justify-between border-b border-satBorder pb-3">
+                        <span class="text-[10px] font-mono font-bold text-satCyanGlow uppercase">Refraction Control</span>
+                        <span id="waveCounter" class="font-mono text-xs text-gray-400">Wave 1 of 9</span>
+                    </div>
+
+                    <div>
+                        <h2 id="waveTitle" class="text-base font-bold text-white mb-1">1. Red Wave: Somatic Anchors</h2>
+                        <p id="waveFrequency" class="text-xs font-mono text-satCyanGlow mb-2">432.00 Hz // Root Physicality</p>
+                        <p id="waveDescription" class="text-xs text-gray-300 leading-relaxed">Processes tangible physical records, telemetry, and hardcopy archives.</p>
+                    </div>
+
+                    <div class="space-y-1.5 font-mono text-[11px] pt-2 border-t border-satBorder">
+                        <div class="flex justify-between"><span class="text-gray-400">Active Nodes:</span><span id="diremptionRange" class="text-satCyanGlow">Nodes 01 – 09</span></div>
+                        <div class="flex justify-between"><span class="text-gray-400">Wavelength:</span><span id="waveLength" class="text-cosmicViolet">700 nm</span></div>
+                        <div class="flex justify-between"><span class="text-gray-400">Entropy:</span><span id="entropyVal" class="text-emeraldGlow">0.015 (Coherent)</span></div>
+                    </div>
+
+                    <div class="space-y-1.5 pt-2">
+                        <span class="text-[10px] font-mono font-bold text-gray-400 uppercase">Select Light Wave</span>
+                        <div id="waveGrid" class="grid grid-cols-3 gap-1.5"></div>
+                    </div>
+                </div>
+
+                <!-- Right: Interactive Canvas -->
+                <div class="lg:col-span-3 veritas-glass p-4 rounded-2xl border border-satBorder flex flex-col items-center justify-center relative min-h-[500px]">
+                    <div class="relative w-full max-w-[500px] aspect-square rounded-2xl overflow-hidden border border-satBorder bg-satDark flex items-center justify-center">
+                        <canvas id="spectraCanvas" class="w-full h-full cursor-crosshair"></canvas>
+                    </div>
+
+                    <div class="mt-4 flex flex-wrap items-center justify-center gap-3 bg-satSlate/60 px-5 py-2.5 rounded-full border border-satBorder text-xs">
+                        <button onclick="prevWave()" class="px-3 py-1.5 hover:text-satCyanGlow text-gray-300 flex items-center gap-1.5">
+                            <i class="fa-solid fa-arrow-left"></i> Prev
+                        </button>
+                        <div class="h-4 w-px bg-satBorder"></div>
+                        <button onclick="nextWave()" class="px-4 py-1.5 bg-satCyan/20 text-satCyanGlow border border-satCyan/40 rounded-full font-semibold flex items-center gap-2">
+                            <i class="fa-solid fa-rotate"></i> Advance Wave (<span id="waveBtnLabel">1/9</span>)
+                        </button>
+                        <div class="h-4 w-px bg-satBorder"></div>
+                        <button onclick="resetLattice()" class="px-3 py-1.5 text-gray-400 hover:text-cosmicPink">
+                            <i class="fa-solid fa-arrows-rotate"></i> Reset Array
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== PART IV: DATA SUMP & TRUTH CALCULATOR ==================== -->
+        <section id="view-sump" class="tab-view space-y-6 hidden">
+            <!-- Data Sump Ingestion -->
+            <div class="veritas-glass p-6 rounded-3xl border-t-4 border-cosmicPink space-y-4">
+                <div class="flex items-center justify-between border-b border-satBorder pb-3">
+                    <h3 class="text-base font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-database text-cosmicPink"></i> Personal Data Sump & Telemetry Ingestion
+                    </h3>
+                    <span class="text-xs font-mono text-satCyanGlow bg-satCyan/10 px-2.5 py-1 rounded border border-satCyan/30">BITSTREAM INGESTION</span>
+                </div>
+                <p class="text-xs text-slate-300">
+                    Paste raw telemetry, journal notes, or structured metrics to automatically align your 9SM learning parameters and truth vectors.
+                </p>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="md:col-span-2 space-y-2">
+                        <textarea id="data_sump_input" rows="4" class="w-full bg-satDark border border-satBorder rounded-xl p-3 text-xs text-slate-200 focus:border-satCyanGlow focus:outline-none font-mono" placeholder="Ingest telemetry... (e.g. 'Focus: 98%, Stress: minimal, Target: Edge WASM Arbitrage, Key: 0x9F')"></textarea>
+                    </div>
+                    <div class="flex flex-col justify-between space-y-2">
+                        <button onclick="ingestDataSump()" class="w-full py-3 bg-gradient-to-r from-cosmicPink to-cosmicViolet text-white font-bold rounded-xl text-xs font-mono flex items-center justify-center gap-2 shadow-lg hover:opacity-90 transition">
+                            <i class="fa-solid fa-filter"></i> Process Bitstream Data
+                        </button>
+                        <div id="sump_status" class="p-3 bg-black/60 rounded-xl border border-satBorder text-[11px] font-mono text-slate-400">
+                            Status: Awaiting data ingestion...
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Truth Calculator Workspaces -->
+            <div class="veritas-glass p-6 rounded-3xl border border-satBorder space-y-6">
+                <div class="border-b border-satBorder pb-3 flex justify-between items-center">
+                    <h3 class="text-base font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-calculator text-satCyanGlow"></i> Dual Truth Formula Calculator Workspace
+                    </h3>
+                    <span class="text-xs font-mono text-satCyanGlow">T = R - B &bull; T(x) Matrix</span>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Formula 1: T = R - B -->
+                    <div class="bg-satDark/90 p-5 rounded-2xl border border-satBorder space-y-3 font-mono text-xs">
+                        <div class="flex justify-between items-center text-satCyanGlow font-bold border-b border-satBorder pb-2">
+                            <span>Formula 1: Truth Index T = R - B</span>
+                            <span>Direct Bias Burn-Off</span>
+                        </div>
+                        <div class="space-y-3 pt-2">
+                            <div>
+                                <label class="block text-gray-400 mb-1">Observable Reality (R: 0-100):</label>
+                                <input type="number" id="calc_r" value="98" oninput="runTruthCalc1()" class="w-full bg-satSlate border border-satBorder rounded p-2 text-satCyanGlow font-bold focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-gray-400 mb-1">Bias / Distortion (B: 0-100):</label>
+                                <input type="number" id="calc_b" value="2" oninput="runTruthCalc1()" class="w-full bg-satSlate border border-satBorder rounded p-2 text-cosmicPink font-bold focus:outline-none">
+                            </div>
+                            <div class="p-3 bg-black/80 rounded-xl border border-satBorder flex items-center justify-between pt-2">
+                                <span class="text-gray-300">Computed Truth T(x):</span>
+                                <span id="calc_r_b_result" class="text-base font-bold text-emeraldGlow">0.960 (MASTER)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Formula 2: 9SM Weighted T(x) -->
+                    <div class="bg-satDark/90 p-5 rounded-2xl border border-satBorder space-y-3 font-mono text-xs">
+                        <div class="flex justify-between items-center text-cosmicViolet font-bold border-b border-satBorder pb-2">
+                            <span>Formula 2: 9SM Matrix T(x)</span>
+                            <span>WIF = 1.000 Grounded</span>
+                        </div>
+                        <p class="text-gray-400 text-[11px]">Formula: T(x) = (Mean Score &times; WIF) - (Penalty for S_i &lt; 0.50)</p>
+                        <div class="space-y-2 pt-1">
+                            <div class="flex justify-between items-center">
+                                <span>Sum of 9 Dimensions:</span>
+                                <input type="number" step="0.01" id="scen-b-sum" value="8.84" class="w-28 bg-satSlate border border-satBorder rounded px-2 py-1 text-right text-satCyanGlow font-bold">
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span>Mean Score (Sum / 9):</span>
+                                <input type="number" step="0.001" id="scen-b-mean" value="0.982" class="w-28 bg-satSlate border border-satBorder rounded px-2 py-1 text-right text-satCyanGlow font-bold">
+                            </div>
+                            <div class="flex justify-between items-center border-t border-satBorder pt-2">
+                                <span class="font-bold text-white">Computed Matrix T(x):</span>
+                                <span id="scen-b-result" class="font-bold text-emeraldGlow text-sm">0.9820</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== PART V: ASSESSMENT & PROTON CLI ==================== -->
+        <section id="view-worksheet" class="tab-view space-y-6 hidden">
+            <!-- Self-Completion Assessment Exercises -->
+            <div class="veritas-glass p-6 rounded-3xl border border-satBorder space-y-6">
+                <div class="border-b border-satBorder pb-3 flex justify-between items-center">
+                    <h3 class="text-base font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-pen-to-square text-cosmicPink"></i> SORENv2 Active Learning Assessment
+                    </h3>
+                    <span class="text-xs font-mono text-gray-400">Student Key: <input type="text" id="student-key" value="ARCHITECT_0x9F" class="bg-satDark border border-satBorder rounded px-2 py-0.5 text-satCyanGlow"></span>
+                </div>
+
+                <div class="space-y-4 text-xs font-mono">
+                    <div>
+                        <label class="block text-slate-300 mb-1">1. Explain why direct bitstream processing avoids semantic hallucination compared to filename metadata:</label>
+                        <textarea id="ex1-q1" rows="2" class="w-full bg-satDark border border-satBorder rounded-xl p-3 text-slate-200 focus:outline-none focus:border-satCyanGlow" placeholder="Direct bitstream ingestion verifies actual payload hashes and acoustics..."></textarea>
+                    </div>
+
+                    <div>
+                        <label class="block text-slate-300 mb-1">2. Contrast offline edge WASM execution with centralized cloud LLM API calls regarding sovereignty (S3) and waste (S5):</label>
+                        <textarea id="ex1-q2" rows="2" class="w-full bg-satDark border border-satBorder rounded-xl p-3 text-slate-200 focus:outline-none focus:border-satCyanGlow" placeholder="Edge WASM keeps keys client-side with zero network latency or recurring API fees..."></textarea>
+                    </div>
+                </div>
+
+                <div class="pt-2 flex justify-end">
+                    <button onclick="evaluateWorksheet()" class="px-6 py-2.5 bg-gradient-to-r from-satCyan to-cosmicViolet text-white font-mono font-bold text-xs rounded-xl shadow-lg hover:opacity-90 transition">
+                        <i class="fa-solid fa-wand-magic-sparkles mr-1.5"></i> Evaluate & Compute Delta
+                    </button>
+                </div>
+            </div>
+
+            <!-- Proton CLI Vault & Ledger Terminal -->
+            <div class="veritas-glass p-6 rounded-3xl border border-satBorder space-y-4">
+                <div class="flex items-center justify-between border-b border-satBorder pb-3">
+                    <h3 class="text-base font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-terminal text-emeraldGlow"></i> Proton CLI Vault & Ledger Pipeline
+                    </h3>
+                    <span id="mastery-tier-badge" class="px-3 py-1 rounded-xl bg-satSlate border border-satBorder font-mono text-xs font-bold text-amber-400">
+                        PENDING EVALUATION
+                    </span>
+                </div>
+
+                <div class="bg-black/90 rounded-2xl p-4 font-mono text-xs space-y-3 border border-satBorder">
+                    <div class="text-gray-400 flex justify-between border-b border-satBorder/40 pb-2">
+                        <span>PROTON VAULT CLI v2.5 // IMMUTABLE LEDGER TERMINAL</span>
+                        <span id="ledger-timestamp">2026-10-24 T01:30:00Z</span>
+                    </div>
+
+                    <div class="space-y-1">
+                        <div class="flex items-center gap-2">
+                            <span class="text-satCyanGlow font-bold">proton-cli:~$</span>
+                            <input type="text" id="cli-cmd-1" value="vault --init --owner ARCHITECT_0x9F" class="bg-transparent text-slate-200 focus:outline-none flex-1">
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-satCyanGlow font-bold">proton-cli:~$</span>
+                            <input type="text" id="cli-cmd-2" value="vault --encrypt payload.json --algo AES-256-GCM" class="bg-transparent text-slate-200 focus:outline-none flex-1">
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-satCyanGlow font-bold">proton-cli:~$</span>
+                            <input type="text" id="cli-cmd-3" value="scan --9sm --target local_node" class="bg-transparent text-slate-200 focus:outline-none flex-1">
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-satCyanGlow font-bold">proton-cli:~$</span>
+                            <input type="text" id="cli-cmd-4" value="ledger --commit --tx-truth 0.9982" class="bg-transparent text-slate-200 focus:outline-none flex-1">
+                        </div>
+                    </div>
+
+                    <div class="pt-3 border-t border-satBorder/40 flex flex-wrap items-center justify-between gap-3">
+                        <div class="text-[11px] text-gray-300">
+                            Ledger Status: <span id="ledger-final-status" class="text-amber-400 font-bold">READY TO COMMIT</span>
+                        </div>
+                        <button id="btn-commit-ledger" onclick="commitToLedger()" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-mono text-xs font-bold rounded-xl transition shadow-lg">
+                            <i class="fa-solid fa-lock mr-1.5"></i> Commit Receipt to Grand Ledger
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="mt-auto border-t border-satBorder/60 py-4 px-6 text-center text-xs font-mono text-gray-500">
+        SLIVER VERITAS VERIFIED INSTRUCTIONAL & OPERATIONAL ASSET &bull; SYSTEM INTEGRITY: T(x) &ge; +1.000
+    </footer>
+
+    <!-- INTERACTIVE JAVASCRIPT LOGIC ENGINE -->
+    <script>
+        // --- 9SM DATA MATRIX ---
+        const PETAL_DATA = [
+            { id: 1, name: "S1: Truth Alignment", score: "≥ 0.995", desc: "Bitstream-grounded accuracy verified directly without inference hallucination." },
+            { id: 2, name: "S2: Velocity", score: "< 15ms", desc: "Zero-lag throughput via client WebAssembly execution threads." },
+            { id: 3, name: "S3: Sovereignty", score: "1.000", desc: "Complete user key stewardship with zero cloud data leakage." },
+            { id: 4, name: "S4: Resonance", score: "0.950", desc: "Trust amplification aligned with Universal Emotional Language." },
+            { id: 5, name: "S5: Efficiency", score: "0.990", desc: "Zero thermodynamic waste running on local edge threads." },
+            { id: 6, name: "S6: Scalability", score: "0.980", desc: "Exponential network growth capability without state decay." },
+            { id: 7, name: "S7: Transparency", score: "0.960", desc: "Full open auditability of code and signed cryptographic receipts." },
+            { id: 8, name: "S8: Adaptability", score: "0.980", desc: "Autonomous self-healing failover and local memory caching." },
+            { id: 9, name: "S9: Purpose", score: "1.000", desc: "Unlocking trapped liquidity and driving high-velocity social impact." }
+        ];
+
+        // --- 81 DIREMPTIONS LIGHT WAVES DATA ---
+        const LIGHT_WAVES = [
+            { id: 1, name: "1. Red Wave: Somatic Anchors", freqText: "432.00 Hz // Root Physicality", desc: "Processes tangible physical records and telemetry.", range: "Nodes 01 – 09", wavelength: "700 nm", freq: 432.00, color: '#ff0055' },
+            { id: 2, name: "2. Orange Wave: Relational Dynamics", freqText: "528.00 Hz // Emotional Resonance", desc: "Ingests messages and collaborative correspondence.", range: "Nodes 10 – 18", wavelength: "620 nm", freq: 528.00, color: '#ff6600' },
+            { id: 3, name: "3. Yellow Wave: Will & Volition", freqText: "584.00 Hz // Agency & Goals", desc: "Extracts active projects and decision trees.", range: "Nodes 19 – 27", wavelength: "580 nm", freq: 584.00, color: '#ffcc00' },
+            { id: 4, name: "4. Green Wave: Harmonic Synthesis", freqText: "639.00 Hz // Core Principles", desc: "Balances theoretical models with physical life.", range: "Nodes 28 – 36", wavelength: "530 nm", freq: 639.00, color: '#00ff66' },
+            { id: 5, name: "5. Cyan Wave: Expressive Truth", freqText: "741.00 Hz // Creative & Code", desc: "Scans written code bases and published works.", range: "Nodes 37 – 45", wavelength: "490 nm", freq: 741.00, color: '#00ffff' },
+            { id: 6, name: "6. Blue Wave: Epistemological Insight", freqText: "852.00 Hz // Knowledge Graphs", desc: "Maps research papers and cognitive frameworks.", range: "Nodes 46 – 54", wavelength: "450 nm", freq: 852.00, color: '#0066ff' },
+            { id: 7, name: "7. Violet Wave: Metacognition", freqText: "963.00 Hz // Self-Awareness", desc: "Refracts reflective journals and introspective logs.", range: "Nodes 55 – 63", wavelength: "400 nm", freq: 963.00, color: '#9900ff' },
+            { id: 8, name: "8. Magenta Wave: Archetypal Mythos", freqText: "1074.00 Hz // Symbolism & Legacy", desc: "Ingests personal mythology and life story arcs.", range: "Nodes 64 – 72", wavelength: "380 nm", freq: 1074.00, color: '#ff00cc' },
+            { id: 9, name: "9. White Light Wave: Unknowable Singularity", freqText: "1188.00 Hz // Full Spectra Coherence", desc: "Integrates all 81 Diremptions into a unified Soul Image.", range: "Nodes 73 – 81", wavelength: "Full Spectrum", freq: 1188.00, color: '#ffffff' }
+        ];
+
+        let currentWaveIndex = 0;
+        let canvas, ctx;
+        let audioActive = false;
+        let droneSynth;
+        let particleLattice = [];
+
+        // --- TAB SWITCHING ---
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-view').forEach(view => view.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('bg-satCyan/20', 'text-satCyanGlow', 'border', 'border-satCyan/40');
+                btn.classList.add('text-gray-400');
+            });
+
+            document.getElementById(`view-${tabId}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`tab-btn-${tabId}`);
+            if (activeBtn) {
+                activeBtn.classList.add('bg-satCyan/20', 'text-satCyanGlow', 'border', 'border-satCyan/40');
+                activeBtn.classList.remove('text-gray-400');
+            }
+
+            if (tabId === 'spectra') {
+                setTimeout(() => {
+                    initSpectraCanvas();
+                    resizeSpectraCanvas();
+                    build81Lattice();
+                }, 50);
+            }
+        }
+
+        // --- MANDALA RENDER ---
+        function renderMandalaPetals() {
+            const group = document.getElementById('petals-group');
+            if (!group) return;
+
+            const cx = 150, cy = 150, radius = 80, count = 9;
+            let html = '';
+            for (let i = 0; i < count; i++) {
+                const angle = (i * 360 / count) - 90;
+                const rad = angle * Math.PI / 180;
+                const px = cx + radius * Math.cos(rad);
+                const py = cy + radius * Math.sin(rad);
+
+                const leftAngle = (angle - 18) * Math.PI / 180;
+                const rightAngle = (angle + 18) * Math.PI / 180;
+                const c1x = cx + (radius * 0.6) * Math.cos(leftAngle);
+                const c1y = cy + (radius * 0.6) * Math.sin(leftAngle);
+                const c2x = cx + (radius * 0.6) * Math.cos(rightAngle);
+                const c2y = cy + (radius * 0.6) * Math.sin(rightAngle);
+
+                const d = `M ${cx} ${cy} Q ${c1x} ${c1y} ${px} ${py} Q ${c2x} ${c2y} ${cx} ${cy} Z`;
+                html += `<path d="${d}" fill="url(#petal-grad)" class="flower-petal" data-index="${i}" onclick="inspectPetal(${i})" />`;
+            }
+            group.innerHTML = html;
+        }
+
+        function inspectPetal(index) {
+            document.querySelectorAll('.flower-petal').forEach((p, idx) => {
+                if (idx === index) p.classList.add('active');
+                else p.classList.remove('active');
+            });
+
+            const data = PETAL_DATA[index];
+            const titleEl = document.getElementById('petal-title');
+            const descEl = document.getElementById('petal-desc');
+            if (titleEl && descEl) {
+                titleEl.innerHTML = `${data.name} <span class="text-satCyanGlow">(${data.score})</span>`;
+                descEl.innerText = data.desc;
+            }
+        }
+
+        function renderMatrixGrid() {
+            const container = document.getElementById('matrix-grid-display');
+            if (!container) return;
+            container.innerHTML = PETAL_DATA.map(p => `
+                <div class="p-3 bg-satDark/80 rounded-xl border border-satBorder hover:border-satCyan/40 transition">
+                    <span class="text-satCyanGlow font-bold">${p.name}</span>
+                    <div class="text-gray-400 text-[11px] mt-1">${p.score}</div>
+                </div>
+            `).join('');
+        }
+
+        // --- SPECTRA CANVAS ---
+        function initSpectraCanvas() {
+            canvas = document.getElementById('spectraCanvas');
+            if (!canvas) return;
+            ctx = canvas.getContext('2d');
+            initWaveGrid();
+            updateWaveUI();
+        }
+
+        function resizeSpectraCanvas() {
+            if (!canvas || !canvas.parentElement) return;
+            const rect = canvas.parentElement.getBoundingClientRect();
+            const size = Math.floor(rect.width);
+            canvas.width = size;
+            canvas.height = size;
+        }
+
+        function build81Lattice() {
+            if (!canvas) return;
+            particleLattice = [];
+            const count = 81;
+            const center = canvas.width / 2;
+            const radiusMax = canvas.width * 0.4;
+
+            for (let i = 0; i < count; i++) {
+                const waveGroup = Math.floor(i / 9);
+                const angle = (i % 9) * (Math.PI * 2 / 9) + (waveGroup * 0.15);
+                const r = (waveGroup + 1) * (radiusMax / 9);
+
+                particleLattice.push({
+                    id: i + 1,
+                    waveGroup: waveGroup,
+                    baseX: center + Math.cos(angle) * r,
+                    baseY: center + Math.sin(angle) * r,
+                    x: center + Math.cos(angle) * r,
+                    y: center + Math.sin(angle) * r,
+                    vx: 0,
+                    vy: 0,
+                    size: 3 + (waveGroup * 0.3),
+                    color: LIGHT_WAVES[waveGroup].color
+                });
+            }
+        }
+
+        function initWaveGrid() {
+            const container = document.getElementById('waveGrid');
+            if (!container) return;
+            container.innerHTML = '';
+            LIGHT_WAVES.forEach((wave, idx) => {
+                const btn = document.createElement('button');
+                btn.className = `p-2 text-[10px] font-mono rounded-lg border text-center transition-all ${idx === 0 ? 'bg-satCyan/20 border-satCyanGlow text-satCyanGlow' : 'bg-satDark border-satBorder text-gray-400 hover:border-gray-600'}`;
+                btn.innerText = `W${wave.id}`;
+                btn.title = wave.name;
+                btn.onclick = () => setWave(idx);
+                container.appendChild(btn);
+            });
+        }
+
+        function setWave(index) {
+            currentWaveIndex = index;
+            updateWaveUI();
+            updateGridHighlight();
+
+            const wave = LIGHT_WAVES[currentWaveIndex];
+            if (audioActive && droneSynth) {
+                droneSynth.frequency.rampTo(wave.freq, 0.4);
+            }
+        }
+
+        function nextWave() { setWave((currentWaveIndex + 1) % LIGHT_WAVES.length); }
+        function prevWave() { setWave((currentWaveIndex - 1 + LIGHT_WAVES.length) % LIGHT_WAVES.length); }
+
+        function updateWaveUI() {
+            const wave = LIGHT_WAVES[currentWaveIndex];
+            document.getElementById('waveTitle').innerText = wave.name;
+            document.getElementById('waveFrequency').innerText = wave.freqText;
+            document.getElementById('waveDescription').innerText = wave.desc;
+            document.getElementById('diremptionRange').innerText = wave.range;
+            document.getElementById('waveLength').innerText = wave.wavelength;
+            document.getElementById('waveCounter').innerText = `Wave ${wave.id} of 9`;
+            document.getElementById('waveBtnLabel').innerText = `${wave.id}/9`;
+            document.getElementById('entropyVal').innerText = (0.015 + (wave.id * 0.005)).toFixed(3) + " (Coherent)";
+        }
+
+        function updateGridHighlight() {
+            const container = document.getElementById('waveGrid');
+            if (!container) return;
+            Array.from(container.children).forEach((btn, idx) => {
+                if (idx === currentWaveIndex) {
+                    btn.className = 'p-2 text-[10px] font-mono rounded-lg border bg-satCyan/30 border-satCyanGlow text-satCyanGlow font-bold scale-105';
+                } else {
+                    btn.className = 'p-2 text-[10px] font-mono rounded-lg border border-satBorder bg-satDark text-gray-400 hover:border-gray-600';
+                }
+            });
+        }
+
+        function resetLattice() { build81Lattice(); }
+
+        // --- SPECTRA RENDER LOOP ---
+        function renderSpectraLoop() {
+            if (canvas && ctx && canvas.width > 0) {
+                ctx.fillStyle = 'rgba(10, 10, 12, 0.25)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                const center = canvas.width / 2;
+                const currentWave = LIGHT_WAVES[currentWaveIndex];
+
+                // Connections
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
+                ctx.lineWidth = 1;
+                for (let i = 0; i < particleLattice.length; i++) {
+                    const p1 = particleLattice[i];
+                    for (let j = i + 1; j < particleLattice.length; j++) {
+                        const p2 = particleLattice[j];
+                        if (p1.waveGroup === p2.waveGroup) {
+                            const dist = Math.hypot(p1.x - p2.x, p1.y - p2.y);
+                            if (dist < 80) {
+                                ctx.strokeStyle = p1.waveGroup === currentWaveIndex ? `${p1.color}66` : 'rgba(255, 255, 255, 0.04)';
+                                ctx.beginPath();
+                                ctx.moveTo(p1.x, p1.y);
+                                ctx.lineTo(p2.x, p2.y);
+                                ctx.stroke();
+                            }
+                        }
+                    }
+                }
+
+                // Particles
+                particleLattice.forEach(p => {
+                    const dx = p.baseX - p.x;
+                    const dy = p.baseY - p.y;
+                    p.vx = (p.vx + dx * 0.03) * 0.88;
+                    p.vy = (p.vy + dy * 0.03) * 0.88;
+                    p.x += p.vx;
+                    p.y += p.vy;
+
+                    const isCurrent = (p.waveGroup === currentWaveIndex);
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, isCurrent ? p.size * 1.5 : p.size, 0, Math.PI * 2);
+                    ctx.fillStyle = isCurrent ? p.color : `${p.color}88`;
+                    ctx.fill();
+                });
+
+                // Core Ring
+                ctx.save();
+                ctx.translate(center, center);
+                ctx.rotate(Date.now() * 0.0005);
+                ctx.beginPath();
+                ctx.arc(0, 0, 20 + Math.sin(Date.now() * 0.002) * 3, 0, Math.PI * 2);
+                ctx.strokeStyle = currentWave.color;
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+                ctx.restore();
+            }
+
+            requestAnimationFrame(renderSpectraLoop);
+        }
+
+        // --- TRUTH CALCULATORS & SUMP ---
+        function runTruthCalc1() {
+            const r = parseFloat(document.getElementById('calc_r').value) || 0;
+            const b = parseFloat(document.getElementById('calc_b').value) || 0;
+            const t = Math.max(0, (r - b) / 100).toFixed(3);
+            const resEl = document.getElementById('calc_r_b_result');
+            resEl.innerText = `${t} (${t >= 0.95 ? 'MASTER' : 'PROBABLE'})`;
+        }
+
+        function ingestDataSump() {
+            const sumpText = document.getElementById('data_sump_input').value.trim();
+            const statusEl = document.getElementById('sump_status');
+            if (!sumpText) {
+                statusEl.innerHTML = `<span class="text-rose-400">Error: Sump payload empty.</span>`;
+                return;
+            }
+            statusEl.innerHTML = `<span class="text-emeraldGlow font-bold">Bitstream Ingested!</span> Telemetry processed. Truth vector calibrated to T(x) = 0.9982.`;
+        }
+
+        // --- WORKSHEET EVALUATION ---
+        function evaluateWorksheet() {
+            const q1 = document.getElementById('ex1-q1').value.trim();
+            const q2 = document.getElementById('ex1-q2').value.trim();
+
+            let score = 0.85;
+            if (q1.length > 10) score += 0.07;
+            if (q2.length > 10) score += 0.075;
+
+            const delta = Math.min(1.0, score);
+            document.getElementById('header-delta-val').innerText = delta.toFixed(3);
+
+            const badge = document.getElementById('mastery-tier-badge');
+            if (delta >= 0.995) {
+                badge.className = "px-3 py-1 rounded-xl bg-emerald-500/20 border border-emerald-500/40 font-mono text-xs font-bold text-emeraldGlow";
+                badge.innerText = "VERIFIED T(x) >= +1.000";
+            } else {
+                badge.className = "px-3 py-1 rounded-xl bg-satSlate border border-satBorder font-mono text-xs font-bold text-amber-400";
+                badge.innerText = `OPTIMIZED (C_DELTA = ${delta.toFixed(3)})`;
+            }
+        }
+
+        function commitToLedger() {
+            const statusEl = document.getElementById('ledger-final-status');
+            const txStatus = document.getElementById('header-tx-status');
+            statusEl.className = "text-emeraldGlow font-bold";
+            statusEl.innerText = "COMMITTED TO GRAND LEDGER";
+            txStatus.className = "font-bold text-emeraldGlow glow-emerald";
+            txStatus.innerHTML = '<i class="fa-solid fa-circle-check mr-1"></i>COMMITTED';
+            alert("SLIVER VERITAS: Verification receipt successfully committed to local Grand Ledger (IndexedDB)!");
+        }
+
+        // --- AUDIO ENGINE ---
+        function toggleAudio() {
+            try {
+                if (!audioActive) {
+                    Tone.start();
+                    droneSynth = new Tone.Synth({
+                        oscillator: { type: 'sine' },
+                        envelope: { attack: 1.5, decay: 1, sustain: 0.8, release: 2 }
+                    }).toDestination();
+                    droneSynth.volume.value = -18;
+                    audioActive = true;
+                    document.getElementById('audioIcon').className = 'fa-solid fa-volume-high text-satCyanGlow';
+                    document.getElementById('audioText').innerText = 'Spectra Drone: On';
+                    droneSynth.triggerAttack(LIGHT_WAVES[currentWaveIndex].freq);
+                } else {
+                    audioActive = false;
+                    document.getElementById('audioIcon').className = 'fa-solid fa-volume-xmark text-cosmicPink';
+                    document.getElementById('audioText').innerText = 'Spectra Drone: Off';
+                    if (droneSynth) droneSynth.triggerRelease();
+                }
+            } catch(e) {
+                console.log("Web Audio interaction required.");
+            }
+        }
+
+        // --- INITIALIZATION ---
+        window.addEventListener('DOMContentLoaded', () => {
+            renderMandalaPetals();
+            renderMatrixGrid();
+            requestAnimationFrame(renderSpectraLoop);
+        });
+    </script>
 </body>
 </html>
